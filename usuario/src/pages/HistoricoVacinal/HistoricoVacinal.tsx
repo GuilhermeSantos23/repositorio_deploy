@@ -36,7 +36,7 @@ const sections: VaccineSection[] = [
 function HistoricoVacinal() {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800">Olá, {user.name}!</h1>
+      <h1 className="text-2xl font-bold text-gray-800">Olá, João!</h1>
       <p className="mt-1 text-sm text-gray-500">
         Aqui está suas vacinas pendentes , em atraso e suas próximas vacinas
       </p>
