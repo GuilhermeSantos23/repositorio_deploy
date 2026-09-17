@@ -40,7 +40,7 @@ function Login() {
     }
 
     if (validationStep === 'success') {
-      const timer = setTimeout(() => navigate('/clinicas-privadas'), 800);
+      const timer = setTimeout(() => navigate('/dashboard'), 800);
       return () => clearTimeout(timer);
     }
   }, [validationStep, navigate]);
