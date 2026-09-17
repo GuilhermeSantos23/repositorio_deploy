@@ -40,7 +40,7 @@ function Header({
         <UserAvatar size={36} />
 
         <div className="text-left text-sm">
-          <p className="font-semibold text-gray-900">Dr(a) {userName}</p>
+          <p className="font-semibold text-gray-900">Enf(a) {userName}</p>
           <p className="text-gray-500">{userRole}</p>
         </div>
       </div>

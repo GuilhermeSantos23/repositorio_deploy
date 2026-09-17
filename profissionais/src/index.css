@@ -17,18 +17,7 @@
   }
 }
 
-/* Dá a sensação de "virar a página" na Caderneta de Saúde: a página nova
-   entra com uma leve rotação/deslocamento até se acomodar no lugar. */
-@keyframes booklet-page-turn {
-  from {
-    opacity: 0;
-    transform: perspective(1200px) rotateY(-8deg) translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(1200px) rotateY(0deg) translateX(0);
-  }
-}
+
 
 * {
   box-sizing: border-box;
