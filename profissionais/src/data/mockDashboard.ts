@@ -1,5 +1,5 @@
 import { MOCK_LOTS } from './mockLots';
-import { getVaccineStock, STOCK_CRITICAL_THRESHOLD } from '../utils/stockRules';
+import { getVaccineStock, } from '../utils/stockRules';
 
 // Dados de exemplo para a Home/Dashboard do profissional.
 // Assim como em mockPatients.ts e mockHistory.ts, estes valores são só
