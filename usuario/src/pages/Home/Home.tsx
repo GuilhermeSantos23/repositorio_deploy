@@ -21,7 +21,7 @@ function Home() {
   return (
     <div>
       <p className="text-sm text-gray-500">Sua área Vac+</p>
-      <h1 className="text-2xl font-bold text-gray-800">Olá, {userName}!</h1>
+      <h1 className="text-2xl font-bold text-gray-800">Olá, João!</h1>
       <p className="mt-1 text-sm text-gray-500">
         Acompanhe sua caderneta, próximas doses, alertas de surtos e atalhos
         rápidos.
