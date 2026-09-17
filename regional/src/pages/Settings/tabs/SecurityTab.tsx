@@ -1,0 +1,79 @@
+import { useState } from 'react';
+import { Switch, Input, Alert } from 'antd';
+
+function SecurityTab() {
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  function handleChangePassword() {
+    if (newPassword !== confirmPassword) {
+      setPasswordError('As senhas não coincidem.');
+      return;
+    }
+
+    setPasswordError('');
+    // TODO(backend): futuramente enviar currentPassword/newPassword para a API.
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+      <h2 className="text-sm font-bold tracking-wide text-gray-800">Segurança da conta</h2>
+
+      <div className="mt-4 mb-6 flex items-center justify-between rounded-lg border border-gray-100 p-4">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Autenticação em duas etapas</p>
+          <p className="text-sm text-gray-500">Receba um código de verificação a cada login.</p>
+        </div>
+        <Switch checked={twoFactorEnabled} onChange={setTwoFactorEnabled} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700">Senha atual</span>
+          <Input.Password
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+          />
+        </label>
+
+        <div />
+
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700">Nova senha</span>
+          <Input.Password
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700">
+            Confirmar nova senha
+          </span>
+          <Input.Password
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+        </label>
+      </div>
+
+      {passwordError && <Alert type="error" message={passwordError} showIcon className="mt-4" />}
+
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={handleChangePassword}
+          className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+        >
+          Alterar senha
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default SecurityTab;

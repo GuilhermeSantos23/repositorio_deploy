@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+/* Permite usar classes "dark:" controladas manualmente por uma classe
+   ".dark" no <html>, em vez de só pelo tema do sistema operacional. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Animação do check "desenhado" nas telas de validação. */
+@keyframes draw-circle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Dá a sensação de "virar a página" na Caderneta de Saúde: a página nova
+   entra com uma leve rotação/deslocamento até se acomodar no lugar. */
+@keyframes booklet-page-turn {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-8deg) translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
