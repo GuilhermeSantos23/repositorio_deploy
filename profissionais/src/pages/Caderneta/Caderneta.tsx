@@ -44,7 +44,7 @@ interface RegistroCaderneta {
   data?: string;
   unidade?: string;
   profissional?: string;
-  crm?: string;
+  cofen?: string;
   justificativaNaoRealizada?: string;
 }
 
@@ -251,7 +251,7 @@ function Caderneta() {
             data,
             unidade: UNIT_NAME,
             profissional: profissionalAtual?.name,
-            crm: profissionalAtual?.crm,
+            cofen: profissionalAtual?.cofen,
           }
         : { justificativaNaoRealizada }),
     };
@@ -271,7 +271,7 @@ function Caderneta() {
       ...(registro.data ? { data: registro.data } : {}),
       ...(registro.unidade ? { unidade: registro.unidade } : {}),
       ...(registro.profissional ? { profissional: registro.profissional } : {}),
-      ...(registro.crm ? { crm: registro.crm } : {}),
+      ...(registro.cofen ? { cofen: registro.cofen } : {}),
       ...(registro.justificativaNaoRealizada
         ? { justificativa: registro.justificativaNaoRealizada }
         : {}),
@@ -610,7 +610,7 @@ function Caderneta() {
                     CRM do profissional
                   </label>
                   <input
-                    value={profissionalAtual?.crm ?? 'Não identificado'}
+                    value={profissionalAtual?.cofen ?? 'Não identificado'}
                     disabled
                     className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
                   />
@@ -672,7 +672,7 @@ function Caderneta() {
                 <Row label="Data" value={data || 'Não informada'} />
                 <Row label="Unidade" value={UNIT_NAME} />
                 <Row label="Profissional" value={profissionalAtual?.name ?? 'Não identificado'} />
-                <Row label="CRM" value={profissionalAtual?.crm ?? 'Não identificado'} />
+                <Row label="COFEN" value={profissionalAtual?.cofen ?? 'Não identificado'} />
               </>
             ) : (
               <Row label="Justificativa" value={justificativaNaoRealizada} />

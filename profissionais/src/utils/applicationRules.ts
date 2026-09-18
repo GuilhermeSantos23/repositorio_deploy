@@ -9,8 +9,8 @@ export function isValidProfessionalCrm(crm: string): boolean {
   return /^\d{1,6}$/.test(crm);
 }
 
-export function getProfessionalCrm(professional: Professional | undefined): string {
-  return professional?.crm ?? '';
+export function getProfessionalCofen(professional: Professional | undefined): string {
+  return professional?.cofen ?? '';
 }
 
 export function isValidUnit(unit: string, expectedUnit: string): boolean {
@@ -28,7 +28,7 @@ export function canSubmitApplication(params: {
     isValidApplicationDate(params.applicationDate) &&
     canRegisterApplication(params.lot) &&
     Boolean(params.professional) &&
-    isValidProfessionalCrm(params.professional?.crm ?? '') &&
+    isValidProfessionalCrm(params.professional?.cofen ?? '') &&
     isValidUnit(params.unit, params.expectedUnit)
   );
 }

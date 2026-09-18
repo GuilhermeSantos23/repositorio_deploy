@@ -13,6 +13,7 @@ import {
 import { useUser } from '../../hooks/useUser';
 import { STOCK_CRITICAL_THRESHOLD } from '../../utils/stockRules';
 import { getDashboardData } from '../../services/dashboardService';
+import { getFirstName } from '../../utils/name';
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -82,7 +83,7 @@ function Home() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Olá, {userName}! </h1>
+          <h1 className="text-2xl font-bold text-gray-800">Olá, {getFirstName(userName)}!</h1>
           <p className="mt-2 text-sm text-gray-500">
             Aqui está o resumo das atividades da sua unidade hoje.
           </p>

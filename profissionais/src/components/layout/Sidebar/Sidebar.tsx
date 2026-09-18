@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   HomeOutlined,
   SafetyOutlined,
@@ -9,9 +9,7 @@ import {
 } from '@ant-design/icons';
 
 import logo from '../../../assets/vacmais-logo.png';
-
-
-
+import { logout } from '../../../services/authService';
 
 // "to: null" significa que a Page correspondente ainda não existe;
 // esses itens continuam como link de placeholder por enquanto.
@@ -24,7 +22,6 @@ const mainNavItems = [
 
 const bottomNavItems = [
   { label: 'Configurações', icon: <SettingOutlined />, to: '/configuracoes' },
-  { label: 'Sair', icon: <LogoutOutlined />, to: '/login' },
 ];
 
 const linkClassName =
@@ -34,6 +31,12 @@ const activeLinkClassName = 'bg-emerald-900 text-white';
 
 function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-emerald-950 text-emerald-50 lg:flex">
@@ -96,6 +99,14 @@ function Sidebar() {
               </Link>
             </li>
           ))}
+          <li>
+            <button type="button" onClick={handleLogout} className={`${linkClassName} w-full text-left`}>
+              <span className="text-base">
+                <LogoutOutlined />
+              </span>
+              Sair
+            </button>
+          </li>
         </ul>
       </div>
     </aside>

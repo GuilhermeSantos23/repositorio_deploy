@@ -4,6 +4,7 @@ import AuthLayout from '../../layouts/AuthLayout/AuthLayout';
 import FormField from '../../components/form/FormField/FormField';
 import ValidationOverlay from '../../components/common/ValidationOverlay/ValidationOverlay';
 import { maskCPF, maskNumeric } from '../../utils/masks';
+import { login } from '../../services/authService';
 
 interface LoginErrors {
   cpf?: string;
@@ -50,7 +51,8 @@ function Login() {
     }
 
     if (validationStep === 'success') {
-      const timer = setTimeout(() => navigate('/home'), 800);
+      login();
+      const timer = setTimeout(() => navigate('/home', { replace: true }), 800);
       return () => clearTimeout(timer);
     }
   }, [validationStep, navigate]);

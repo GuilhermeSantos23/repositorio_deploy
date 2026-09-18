@@ -218,7 +218,7 @@ export default function VaccinationBookletView({
             )}
             <span>Lote: {record.lote || 'Não informado'}</span>
             <span>Profissional: {record.profissional || 'Não informado'}</span>
-            <span>CRM: {record.crm || 'Não informado'}</span>
+            <span>COFEN: {record.cofen || 'Não informado'}</span>
             <span>Unidade: {record.unidade || 'Não informado'}</span>
             {record.status === 'nao-realizada' ? (
               <span className="sm:col-span-2">

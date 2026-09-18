@@ -4,25 +4,25 @@ export const MOCK_PROFESSIONALS: Professional[] = [
   {
     id: 'prof-001',
     name: 'Ana Paula Santos',
-    crm: '123456',
+    cofen: '123456',
     unit: 'UBS Pimentas',
   },
   {
     id: 'prof-002',
     name: 'Dra. Helena Ramos',
-    crm: '54321',
+    cofen: '54321',
     unit: 'UBS Pimentas',
   },
   {
     id: 'prof-003',
     name: 'Dr. Carlos Souza',
-    crm: '67890',
+    cofen: '67890',
     unit: 'UBS Pimentas',
   },
   {
     id: 'prof-004',
     name: 'Mariana Costa',
-    crm: '24680',
+    cofen: '24680',
     unit: 'UBS Pimentas',
   },
 ];

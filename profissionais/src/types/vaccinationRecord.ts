@@ -17,7 +17,7 @@ export interface VaccinationRecord {
   lote?: string;
   unidade?: string;
   profissional?: string;
-  crm?: string;
+  cofen?: string;
   justificativa?: string;
   condicaoSensivel?: SensitiveCondition;
 }

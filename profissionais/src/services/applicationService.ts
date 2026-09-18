@@ -43,7 +43,7 @@ export async function registerApplication(
       lote: newApplication.lotCode,
       unidade: newApplication.unit,
       profissional: newApplication.professionalName,
-      crm: newApplication.professionalCrm,
+      cofen: newApplication.professionalCofen,
     },
   });
 

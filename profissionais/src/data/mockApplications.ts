@@ -17,7 +17,7 @@ export const MOCK_APPLICATIONS: VaccineApplication[] = [
     applicationDate: '2026-09-06',
     professionalId: 'prof-001',
     professionalName: 'Ana Paula Santos',
-    professionalCrm: '123456',
+    professionalCofen: '123456',
     unit: 'UBS Pimentas',
   },
   {
@@ -36,7 +36,7 @@ export const MOCK_APPLICATIONS: VaccineApplication[] = [
     applicationDate: '2026-09-05',
     professionalId: 'prof-002',
     professionalName: 'Dra. Helena Ramos',
-    professionalCrm: '54321',
+    professionalCofen: '54321',
     unit: 'UBS Pimentas',
   },
 ];

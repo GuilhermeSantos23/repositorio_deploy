@@ -1,6 +1,6 @@
 export interface Professional {
   id: string;
   name: string;
-  crm: string;
+  cofen: string;
   unit: string;
 }

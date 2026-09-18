@@ -1,48 +1,45 @@
 import { useState } from 'react';
 import { EditOutlined } from '@ant-design/icons';
-import { useUser } from '../../../hooks/useUser';
 import UserAvatar from '../../../components/common/UserAvatar/UserAvatar';
 import AvatarPickerModal from '../../../components/common/AvatarPickerModal/AvatarPickerModal';
 
-interface FieldProps {
+interface InfoFieldProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
-  type?: string;
 }
 
-function Field({ label, value, onChange, type = 'text' }: FieldProps) {
+// Mostra "Não informado" sempre que o dado estiver vazio, nulo ou não
+// cadastrado, para nunca expor undefined/null/texto técnico na tela.
+function getDisplayValue(value: string): string {
+  return value.trim() ? value : 'Não informado';
+}
+
+function InfoField({ label, value }: InfoFieldProps) {
   return (
-    <label className="block">
+    <div>
       <span className="mb-1 block text-sm font-medium text-gray-700">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-emerald-500"
-      />
-    </label>
+      <p className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
+        {getDisplayValue(value)}
+      </p>
+    </div>
   );
 }
 
-// Os dados abaixo são fictícios e servem apenas para a demonstração do frontend.
-// Futuramente serão carregados do perfil do profissional autenticado pelo backend.
+// Os dados abaixo são fictícios e servem apenas para a demonstração do
+// frontend. Futuramente serão carregados do perfil do profissional
+// autenticado pelo backend. Como o profissional está vinculado ao
+// Administrador da Unidade, esses dados são somente leitura aqui: apenas
+// a foto de perfil pode ser alterada diretamente nesta tela.
 function ProfileTab() {
-  const { userName, setUserName } = useUser();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const [firstName, setFirstName] = useState('Helena');
-  const [lastName, setLastName] = useState('Ramos');
-  const [cpf, setCpf] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [crm, setCrm] = useState('54321');
-
-  function handleSave() {
-    const fullName = `${firstName} ${lastName}`.trim();
-    setUserName(fullName || userName);
-    // TODO: futuramente enviar esses dados para o backend via Axios.
-  }
+  const firstName = 'Helena';
+  const lastName = 'Ramos';
+  const cpf = '';
+  const email = '';
+  const phone = '';
+  const unit = 'UBS Pimentas';
+  const cofen = '54321';
 
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -62,27 +59,25 @@ function ProfileTab() {
             <EditOutlined className="text-xs" />
           </span>
         </button>
-        <p className="font-semibold text-gray-900">{fullName || 'Usuário'}</p>
+        <div>
+          <p className="font-semibold text-gray-900">{getDisplayValue(fullName)}</p>
+          <p className="text-xs text-gray-500">Somente a foto de perfil pode ser alterada aqui.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Nome" value={firstName} onChange={setFirstName} />
-        <Field label="Sobrenome" value={lastName} onChange={setLastName} />
-        <Field label="CPF" value={cpf} onChange={setCpf} />
-        <Field label="Email" value={email} onChange={setEmail} type="email" />
-        <Field label="Telefone" value={phone} onChange={setPhone} />
-        <Field label="CRM" value={crm} onChange={setCrm} />
+        <InfoField label="Nome" value={firstName} />
+        <InfoField label="Sobrenome" value={lastName} />
+        <InfoField label="CPF" value={cpf} />
+        <InfoField label="Email" value={email} />
+        <InfoField label="Telefone" value={phone} />
+        <InfoField label="Unidade" value={unit} />
+      <InfoField label="COFEN" value={cofen} />
       </div>
 
-      <div className="mt-6 flex justify-end">
-        <button
-          type="button"
-          onClick={handleSave}
-          className="rounded-lg bg-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-        >
-          Salvar Alterações
-        </button>
-      </div>
+      <p className="mt-6 text-xs text-gray-500">
+        Os dados cadastrais do profissional são gerenciados pelo Administrador da Unidade.
+      </p>
 
       <AvatarPickerModal open={isPickerOpen} onClose={() => setIsPickerOpen(false)} />
     </div>

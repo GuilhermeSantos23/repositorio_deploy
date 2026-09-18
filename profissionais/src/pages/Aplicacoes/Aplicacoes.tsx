@@ -79,7 +79,7 @@ function Aplicacoes() {
     (professional) => normalizeName(professional.name) === normalizeName(userName),
   ) ?? MOCK_PROFESSIONALS[0];
   const profissionalAplicou = MOCK_PROFESSIONALS.find((professional) => professional.id === profissionalId) ?? loggedProfessional;
-  const crmAplicou = profissionalAplicou.crm;
+  const cofenAplicou = profissionalAplicou.cofen;
   const unidade = UNIT_NAME;
   const hasApplications = patient
     ? getAllApplications().some((application) => application.patientCpf === patient.cpfFormatted)
@@ -214,7 +214,7 @@ function Aplicacoes() {
         applicationDate: dataAplicacao,
         professionalId: profissionalAplicou.id,
         professionalName: profissionalAplicou.name,
-        professionalCrm: crmAplicou,
+        professionalCofen: cofenAplicou,
         unit: unidade,
       });
 
@@ -505,9 +505,9 @@ function Aplicacoes() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">CRM do profissional que aplicou</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">COFEN </label>
               <input
-                value={crmAplicou}
+                value={cofenAplicou}
                 readOnly
                 inputMode="numeric"
                 className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none"
@@ -570,7 +570,7 @@ function Aplicacoes() {
             <Row label="Lote" value={loteAtual?.code ?? '—'} />
             <Row label="Data da aplicação" value={dataAplicacao} />
             <Row label="Profissional que aplicou" value={profissionalAplicou.name} />
-            <Row label="CRM" value={crmAplicou || 'Não identificado'} />
+            <Row label="COFEN" value={cofenAplicou || 'Não identificado'} />
             <Row label="Unidade" value={unidade} />
           </dl>
 

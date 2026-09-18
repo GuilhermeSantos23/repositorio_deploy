@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { MOCK_HISTORY, type HistoryEntry } from '../../data/mockHistory';
 import { getAllApplications } from '../../services/applicationService';
 import { getLots } from '../../services/lotService';
+import { getHistoryEntryTime } from '../../utils/historyOrder';
 
 const columns = [
   { title: 'Horário', dataIndex: 'timestamp', key: 'timestamp' },
@@ -82,12 +83,19 @@ function getIntegratedHistory(): HistoryEntry[] {
     );
   });
 
-  return [...applicationEntries, ...mockHistoryWithoutDuplicatedApplications];
+  const combinedHistory = [...applicationEntries, ...mockHistoryWithoutDuplicatedApplications];
+
+  // Do registro mais recente para o mais antigo, calculado a partir do
+  // próprio timestamp de cada registro (ver utils/historyOrder.ts) — nunca
+  // por uma ordem escrita manualmente aqui.
+  return combinedHistory.sort(
+    (a, b) => getHistoryEntryTime(b.timestamp) - getHistoryEntryTime(a.timestamp),
+  );
 }
 
 function RegistrosTab() {
   const [query, setQuery] = useState('');
-  const history = useMemo(getIntegratedHistory, []);
+  const history = useMemo(() => getIntegratedHistory(), []);
   const data = history.filter((entry) => matchesQuery(entry, query));
 
   return (
@@ -107,7 +115,7 @@ function RegistrosTab() {
 function AplicacoesTab() {
   const [query, setQuery] = useState('');
   const [filtro, setFiltro] = useState<'todas' | 'registradas' | 'alteradas'>('todas');
-  const history = useMemo(getIntegratedHistory, []);
+  const history = useMemo(() => getIntegratedHistory(), []);
 
   const data = history.filter((entry) => {
     const isAplicacao = entry.action === 'aplicou-dose' || entry.action === 'alterou-aplicacao';
@@ -141,7 +149,7 @@ function AplicacoesTab() {
 function PacientesTab() {
   const [query, setQuery] = useState('');
   const [selecionado, setSelecionado] = useState<string | null>(null);
-  const history = useMemo(getIntegratedHistory, []);
+  const history = useMemo(() => getIntegratedHistory(), []);
 
   const pacientesUnicos = Array.from(
     new Map(
@@ -299,7 +307,7 @@ function LoteTab() {
                       {application.applicationDate.split('-').reverse().join('/')}
                     </span>
                     <span className="text-gray-500">
-                      {application.professionalName} · CRM {application.professionalCrm}
+                      {application.professionalName} · COFEN {application.professionalCofen || 'Não identificado'}
                     </span>
                     <span className="text-gray-500">{application.unit}</span>
                   </li>
@@ -318,7 +326,7 @@ function LoteTab() {
 function CadernetaHistoricoTab() {
   const [query, setQuery] = useState('');
   const [filtro, setFiltro] = useState<'todas' | 'cadastradas' | 'alteradas'>('todas');
-  const history = useMemo(getIntegratedHistory, []);
+  const history = useMemo(() => getIntegratedHistory(), []);
 
   const data = history.filter((entry) => {
     const isCaderneta =

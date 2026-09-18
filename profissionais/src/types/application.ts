@@ -16,6 +16,6 @@ export interface VaccineApplication {
   applicationDate: string;
   professionalId: string;
   professionalName: string;
-  professionalCrm: string;
+  professionalCofen: string;
   unit: string;
 }
