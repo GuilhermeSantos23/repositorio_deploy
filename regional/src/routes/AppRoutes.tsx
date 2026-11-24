@@ -14,6 +14,7 @@ import Dashboard from '../pages/Dashboard/Dashboard';
 import ClinicasPrivadas from '../pages/ClinicasPrivadas/ClinicasPrivadas';
 import UBSs from '../pages/UBSs/UBSs';
 import Settings from '../pages/Settings/Settings';
+import RelatorioRegional from '../pages/RelatorioRegional/RelatorioRegional';
 
 function AreaLogada() {
   return (
@@ -59,6 +60,12 @@ function AppRoutes() {
           <Route
             path="/clinicas-privadas"
             element={<ClinicasPrivadas />}
+          />
+
+          {/* Relatório Regional */}
+          <Route
+            path="/relatorio-regional"
+            element={<RelatorioRegional />}
           />
 
           {/* Configurações */}

@@ -14,10 +14,7 @@ export type ClinicStatus =
 
 export interface ClinicAdministrator {
   id: string;
-  /** Nome completo. Mantido para listagens e registros que só tinham um campo. */
   name: string;
-  firstName?: string;
-  lastName?: string;
   cpf: string;
   email: string;
   phone: string;
@@ -56,8 +53,7 @@ export interface Clinic {
 
 /** Dados de um administrador preenchidos no formulário (sem id ainda). */
 export interface ClinicAdministratorFormData {
-  firstName: string;
-  lastName: string;
+  name: string;
   cpf: string;
   email: string;
   phone: string;

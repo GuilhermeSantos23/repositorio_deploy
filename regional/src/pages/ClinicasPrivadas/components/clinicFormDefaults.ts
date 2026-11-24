@@ -3,8 +3,7 @@ import { generateTemporaryPassword } from '../../../utils/password';
 
 export function buildEmptyAdministrator(): ClinicAdministratorFormData {
   return {
-    firstName: '',
-    lastName: '',
+    name: '',
     cpf: '',
     email: '',
     phone: '',

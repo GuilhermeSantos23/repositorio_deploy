@@ -63,8 +63,7 @@ function UBSReviewSummary({
                 Administrador {index + 1}
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <ReviewRow label="Nome" value={admin.firstName} />
-                <ReviewRow label="Sobrenome" value={admin.lastName} />
+                <ReviewRow label="Nome" value={admin.name} />
                 <ReviewRow label="CPF" value={admin.cpf} />
                 <ReviewRow label="E-mail" value={admin.email} />
                 <ReviewRow label="Telefone" value={admin.phone} />

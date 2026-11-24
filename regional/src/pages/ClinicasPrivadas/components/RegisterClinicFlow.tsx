@@ -60,7 +60,7 @@ function RegisterClinicFlow({
   }
 
   const titles: Record<Step, string> = {
-    form: 'Cadastrar clínica',
+    form: 'Cadastrar Nova Clínica',
     review: 'Revisão do cadastro',
     success: 'Cadastro concluído',
   };

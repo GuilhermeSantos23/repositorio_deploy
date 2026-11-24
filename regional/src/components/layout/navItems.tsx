@@ -3,6 +3,7 @@ import {
   AppstoreOutlined,
   MedicineBoxOutlined,
   BankOutlined,
+  InboxOutlined,
   SettingOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -32,6 +33,12 @@ export const mainNavItems: NavItem[] = [
     label: 'Clínicas Privadas',
     icon: <BankOutlined />,
     path: '/clinicas-privadas',
+  },
+  {
+    key: 'relatorio-regional',
+    label: 'Relatório Regional',
+    icon: <InboxOutlined />,
+    path: '/relatorio-regional',
   },
 ];
 
