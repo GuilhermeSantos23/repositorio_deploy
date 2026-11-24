@@ -38,6 +38,14 @@ export const MOCK_PATIENTS: Patient[] = [
     susCard: 'Não informado',
   },
   {
+    cpfDigits: '37491826509',
+    cpfFormatted: '374.918.265-09',
+    name: 'Beatriz Lima',
+    birthDate: '14/04/2004',
+    age: 22,
+    hasCaderneta: false,
+  },
+  {
     cpfDigits: '63821749005',
     cpfFormatted: '638.217.490-05',
     name: 'Lucas Almeida',

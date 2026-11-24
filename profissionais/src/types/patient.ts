@@ -11,4 +11,6 @@ export interface Patient {
   susCard?: string;
   motherName?: string;
   fatherName?: string;
+  email?: string;
+  gender?: string;
 }

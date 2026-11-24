@@ -1,177 +1,305 @@
-import type { ReactNode } from 'react';
+import { useMemo, useState } from 'react';
+import { RiseOutlined, SearchOutlined } from '@ant-design/icons';
 import {
-  TeamOutlined,
-  WarningOutlined,
-  MedicineBoxOutlined,
-  BellOutlined,
-  RiseOutlined,
-} from '@ant-design/icons';
+  CAMPANHAS,
+  ESCALA_VACINAS_DIA,
+  FUNCIONARIOS,
+  JANELA_VACINAS,
+  LOTES_EM_ATENCAO,
+  STATUS_LOTE_CLASSE,
+  STATUS_LOTE_LABEL,
+  VACINAS_POR_DIA,
+  VARIACAO_MES_ANTERIOR,
+  type SegmentoDonut,
+} from '../../mocks/dashboard';
 
-// Um indicador exibido no dashboard.
-interface Indicador {
-  id: number;
-  label: string;
-  valor: string | number;
-  tendencia?: string;
-  icone: ReactNode;
-  corFundoIcone: string;
-  corIcone: string;
+function formatDia(dia: number): string {
+  return String(dia).padStart(2, '0');
 }
 
-// Dados fictícios apenas para reproduzir a interface visual.
-const indicadores: Indicador[] = [
-  {
-    id: 1,
-    label: 'Profissionais',
-    valor: 25,
-    icone: <TeamOutlined />,
-    corFundoIcone: 'bg-blue-50',
-    corIcone: 'text-blue-500',
-  },
-  {
-    id: 2,
-    label: 'Estoque crítico',
-    valor: 9,
-    icone: <WarningOutlined />,
-    corFundoIcone: 'bg-red-50',
-    corIcone: 'text-red-500',
-  },
-  {
-    id: 3,
-    label: 'Vacinas entregues (mês)',
-    valor: 1350,
-    tendencia: '+8.4%',
-    icone: <MedicineBoxOutlined />,
-    corFundoIcone: 'bg-emerald-50',
-    corIcone: 'text-emerald-600',
-  },
-  {
-    id: 4,
-    label: 'Campanhas ativos',
-    valor: 23,
-    icone: <BellOutlined />,
-    corFundoIcone: 'bg-amber-50',
-    corIcone: 'text-amber-500',
-  },
-];
-
-// Um ponto do gráfico "Vacinas entregues por dia".
 interface PontoGrafico {
-  dia: string;
-  valor: number;
+  x: number;
+  y: number;
+  dia: number;
+  doses: number;
 }
 
-// Dados fictícios apenas para reproduzir a interface visual.
-const dadosGrafico: PontoGrafico[] = [
-  { dia: '01/05', valor: 32 },
-  { dia: '02/05', valor: 41 },
-  { dia: '03/05', valor: 38 },
-  { dia: '04/05', valor: 44 },
-  { dia: '05/05', valor: 54 },
-  { dia: '06/05', valor: 22 },
-  { dia: '07/05', valor: 27 },
-  { dia: '08/05', valor: 45 },
-  { dia: '09/05', valor: 50 },
-  { dia: '10/05', valor: 57 },
-  { dia: '11/05', valor: 53 },
-  { dia: '12/05', valor: 32 },
-  { dia: '13/05', valor: 28 },
-  { dia: '14/05', valor: 47 },
-  { dia: '15/05', valor: 58 },
-  { dia: '16/05', valor: 51 },
-  { dia: '17/05', valor: 38 },
-  { dia: '18/05', valor: 33 },
-  { dia: '19/05', valor: 40 },
-];
-
-// Configuração do sistema de coordenadas do gráfico (SVG).
-const CHART_WIDTH = 1000;
-const CHART_HEIGHT = 300;
-const CHART_PADDING = { top: 16, right: 16, bottom: 44, left: 32 };
-const VALOR_MAXIMO = 60;
-const LINHAS_GRADE = [0, 20, 40, 60];
-
-function coordenadaX(indice: number, total: number) {
-  const larguraUtil = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
-  return CHART_PADDING.left + (indice / (total - 1)) * larguraUtil;
-}
-
-function coordenadaY(valor: number) {
-  const alturaUtil = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
-  return CHART_PADDING.top + alturaUtil * (1 - valor / VALOR_MAXIMO);
+function caminhoSuave(pontos: PontoGrafico[]): string {
+  if (pontos.length === 0) return '';
+  let caminho = `M ${pontos[0].x} ${pontos[0].y}`;
+  for (let indice = 0; indice < pontos.length - 1; indice += 1) {
+    const anterior = pontos[indice - 1] ?? pontos[indice];
+    const atual = pontos[indice];
+    const proximo = pontos[indice + 1];
+    const seguinte = pontos[indice + 2] ?? proximo;
+    const controle1x = atual.x + (proximo.x - anterior.x) / 6;
+    const controle1y = atual.y + (proximo.y - anterior.y) / 6;
+    const controle2x = proximo.x - (seguinte.x - atual.x) / 6;
+    const controle2y = proximo.y - (seguinte.y - atual.y) / 6;
+    caminho += ` C ${controle1x} ${controle1y}, ${controle2x} ${controle2y}, ${proximo.x} ${proximo.y}`;
+  }
+  return caminho;
 }
 
 function GraficoVacinasPorDia() {
-  const pontos = dadosGrafico.map((ponto, indice) => ({
-    x: coordenadaX(indice, dadosGrafico.length),
-    y: coordenadaY(ponto.valor),
+  const largura = 640;
+  const altura = 230;
+  const margem = { topo: 16, direita: 12, base: 28, esquerda: 32 };
+  const larguraUtil = largura - margem.esquerda - margem.direita;
+  const alturaUtil = altura - margem.topo - margem.base;
+  const baseY = margem.topo + alturaUtil;
+  const totalPontos = VACINAS_POR_DIA.length;
+
+  const pontos: PontoGrafico[] = VACINAS_POR_DIA.map((ponto, indice) => ({
+    x: margem.esquerda + (totalPontos === 1 ? larguraUtil / 2 : (indice / (totalPontos - 1)) * larguraUtil),
+    y: margem.topo + alturaUtil * (1 - ponto.doses / ESCALA_VACINAS_DIA.maximo),
     dia: ponto.dia,
+    doses: ponto.doses,
   }));
 
-  const linha = pontos
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(' ');
-
-  const baseY = coordenadaY(0);
-  const area = `${linha} L ${pontos[pontos.length - 1].x.toFixed(1)} ${baseY.toFixed(1)} L ${pontos[0].x.toFixed(1)} ${baseY.toFixed(1)} Z`;
+  const linha = caminhoSuave(pontos);
+  const primeiro = pontos[0];
+  const ultimo = pontos[pontos.length - 1];
+  const area = primeiro && ultimo ? `${linha} L ${ultimo.x} ${baseY} L ${primeiro.x} ${baseY} Z` : '';
 
   return (
     <svg
-      viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-      className="mt-4 w-full"
-      preserveAspectRatio="none"
+      viewBox={`0 0 ${largura} ${altura}`}
+      className="mt-2 w-full"
+      role="img"
+      aria-label="Vacinas entregues por dia em maio"
     >
       <defs>
-        <linearGradient id="gradienteVacinas" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+        <linearGradient id="gradiente-vacinas-dia" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
         </linearGradient>
       </defs>
 
-      {/* Linhas de grade horizontais */}
-      {LINHAS_GRADE.map((valor) => (
-        <g key={valor}>
-          <line
-            x1={CHART_PADDING.left}
-            x2={CHART_WIDTH - CHART_PADDING.right}
-            y1={coordenadaY(valor)}
-            y2={coordenadaY(valor)}
-            stroke="#f0f0f0"
-            strokeWidth={1}
-          />
-          <text
-            x={CHART_PADDING.left - 8}
-            y={coordenadaY(valor) + 4}
-            textAnchor="end"
-            className="fill-gray-400 text-[11px]"
-          >
-            {valor}
-          </text>
-        </g>
-      ))}
+      {ESCALA_VACINAS_DIA.marcas.map((marca) => {
+        const y = margem.topo + alturaUtil * (1 - marca / ESCALA_VACINAS_DIA.maximo);
+        return (
+          <g key={marca}>
+            <line
+              x1={margem.esquerda}
+              x2={largura - margem.direita}
+              y1={y}
+              y2={y}
+              stroke="#eef1f4"
+              strokeWidth={1}
+            />
+            <text x={margem.esquerda - 8} y={y + 4} textAnchor="end" fill="#9ca3af" fontSize={12}>
+              {marca}
+            </text>
+          </g>
+        );
+      })}
 
-      {/* Área preenchida */}
-      <path d={area} fill="url(#gradienteVacinas)" />
+      {area && <path d={area} fill="url(#gradiente-vacinas-dia)" />}
+      {linha && (
+        <path d={linha} fill="none" stroke="#22c55e" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+      )}
 
-      {/* Linha do gráfico */}
-      <path d={linha} fill="none" stroke="#10b981" strokeWidth={2.5} />
-
-      {/* Pontos e labels do eixo X */}
-      {pontos.map((p) => (
-        <g key={p.dia}>
-          <circle cx={p.x} cy={p.y} r={3.5} fill="#10b981" />
-          <text
-            x={p.x}
-            y={CHART_HEIGHT - CHART_PADDING.bottom + 16}
-            textAnchor="end"
-            className="fill-gray-400 text-[10px]"
-            transform={`rotate(-45 ${p.x} ${CHART_HEIGHT - CHART_PADDING.bottom + 16})`}
-          >
-            {p.dia}
-          </text>
-        </g>
-      ))}
+      {pontos.map((ponto) => {
+        const destacar = ponto === ultimo;
+        const mostrarRotulo = ponto.dia % 2 === 1;
+        return (
+          <g key={ponto.dia}>
+            {destacar && (
+              <circle cx={ponto.x} cy={ponto.y} r={5} fill="#22c55e">
+                <title>
+                  {formatDia(ponto.dia)}/05: {ponto.doses} doses
+                </title>
+              </circle>
+            )}
+            {mostrarRotulo && (
+              <text x={ponto.x} y={altura - 8} textAnchor="middle" fill="#9ca3af" fontSize={12}>
+                {formatDia(ponto.dia)}
+              </text>
+            )}
+          </g>
+        );
+      })}
     </svg>
+  );
+}
+
+function CardVacinasPorDia() {
+  const total = VACINAS_POR_DIA.reduce((soma, ponto) => soma + ponto.doses, 0);
+  const media = VACINAS_POR_DIA.length === 0 ? 0 : Math.round(total / VACINAS_POR_DIA.length);
+  const ultimo = VACINAS_POR_DIA[VACINAS_POR_DIA.length - 1];
+  const variacao = VARIACAO_MES_ANTERIOR.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h2 className="text-sm font-semibold text-gray-900">Vacinas entregues por dia</h2>
+        <span className="flex items-center gap-1 text-sm font-medium text-emerald-600">
+          <RiseOutlined />
+          +{variacao}% vs. mês anterior
+        </span>
+      </div>
+
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <p className="text-gray-400">
+          {JANELA_VACINAS} · total {total.toLocaleString('pt-BR')} · média {media}/dia
+        </p>
+        {ultimo && (
+          <p className="font-medium text-emerald-600">
+            {formatDia(ultimo.dia)}/05 · {ultimo.doses} doses
+          </p>
+        )}
+      </div>
+
+      <GraficoVacinasPorDia />
+    </article>
+  );
+}
+
+function deslocamentoDosSegmentos(segmentos: SegmentoDonut[], total: number, circunferencia: number) {
+  return segmentos.reduce<
+    { segmento: SegmentoDonut; deslocamento: number; comprimento: number }[]
+  >((desenhos, segmento) => {
+    const deslocamento = desenhos.reduce((soma, item) => soma + item.comprimento, 0);
+    const comprimento = total === 0 ? 0 : (segmento.valor / total) * circunferencia;
+    return [...desenhos, { segmento, deslocamento, comprimento }];
+  }, []);
+}
+
+function GraficoDonut({
+  titulo,
+  segmentos,
+}: {
+  titulo: string;
+  segmentos: SegmentoDonut[];
+}) {
+  const total = segmentos.reduce((soma, segmento) => soma + segmento.valor, 0);
+  const raio = 36;
+  const circunferencia = 2 * Math.PI * raio;
+  const arcos = deslocamentoDosSegmentos(segmentos, total, circunferencia);
+
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <h2 className="text-sm font-semibold text-gray-900">{titulo}</h2>
+
+      <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+        <div className="relative h-40 w-40">
+          <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={titulo}>
+            <g transform="rotate(-90 50 50)">
+              {arcos.map(({ segmento, deslocamento, comprimento }) => {
+                if (segmento.valor <= 0 || total === 0) return null;
+                return (
+                  <circle
+                    key={segmento.id}
+                    cx={50}
+                    cy={50}
+                    r={raio}
+                    fill="none"
+                    stroke={segmento.cor}
+                    strokeWidth={13}
+                    strokeDasharray={`${comprimento} ${circunferencia - comprimento}`}
+                    strokeDashoffset={-deslocamento}
+                  />
+                );
+              })}
+            </g>
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-gray-900">
+            {total}
+          </span>
+        </div>
+      </div>
+
+      <ul className="mt-4 flex flex-col gap-2">
+        {segmentos.map((segmento) => (
+          <li key={segmento.id} className="flex items-center justify-between gap-3 text-sm">
+            <span className="flex items-center gap-2 text-gray-600">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: segmento.cor }}
+              />
+              {segmento.label}
+            </span>
+            <span className="font-medium text-gray-700 tabular-nums">{segmento.valor}</span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function TabelaLotes() {
+  const [busca, setBusca] = useState('');
+  const termo = busca.trim().toLowerCase();
+
+  const lotesVisiveis = useMemo(
+    () =>
+      LOTES_EM_ATENCAO.filter((lote) => {
+        if (!termo) return true;
+        return (
+          lote.vacina.toLowerCase().includes(termo) || lote.lote.toLowerCase().includes(termo)
+        );
+      }),
+    [termo],
+  );
+
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">Lotes em atenção</h2>
+        <div className="relative w-full sm:w-64">
+          <SearchOutlined className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={busca}
+            onChange={(evento) => setBusca(evento.target.value)}
+            placeholder="Buscar por vacina ou lote..."
+            aria-label="Buscar por vacina ou lote"
+            className="w-full rounded-lg border border-gray-200 py-1.5 pr-3 pl-9 text-sm text-gray-700 outline-none focus:border-emerald-500"
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-left text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 text-[11px] tracking-wide text-gray-400 uppercase">
+              <th className="py-2 pr-3 font-medium">Vacina</th>
+              <th className="py-2 pr-3 font-medium">Lote</th>
+              <th className="py-2 pr-3 font-medium">Fabricante</th>
+              <th className="py-2 pr-3 font-medium">Validade</th>
+              <th className="py-2 pr-3 font-medium">Qtde</th>
+              <th className="py-2 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lotesVisiveis.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-sm text-gray-400">
+                  Nenhum lote encontrado.
+                </td>
+              </tr>
+            ) : (
+              lotesVisiveis.map((lote) => (
+                <tr key={lote.id} className="border-b border-gray-50 last:border-b-0">
+                  <td className="py-3 pr-3 text-gray-800">{lote.vacina}</td>
+                  <td className="py-3 pr-3 text-gray-600">{lote.lote}</td>
+                  <td className="py-3 pr-3 text-gray-600">{lote.fabricante}</td>
+                  <td className="py-3 pr-3 text-gray-600">{lote.validade}</td>
+                  <td className="py-3 pr-3 text-gray-800 tabular-nums">{lote.quantidade}</td>
+                  <td className={`py-3 font-medium ${STATUS_LOTE_CLASSE[lote.status]}`}>
+                    {STATUS_LOTE_LABEL[lote.status]}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </article>
   );
 }
 
@@ -179,52 +307,23 @@ function Dashboard() {
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900">Olá, Carla!</h1>
-      <p className="mt-0.5 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-gray-500">
         Acompanhe os indicadores estratégicos da sua região em tempo real.
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-5 lg:grid-cols-4">
-        {indicadores.map((indicador) => (
-          <div
-            key={indicador.id}
-            className="w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${indicador.corFundoIcone} ${indicador.corIcone}`}
-              >
-                {indicador.icone}
-              </div>
-              <p className="text-sm leading-tight text-gray-500">{indicador.label}</p>
-            </div>
-
-            <div className="mt-3 flex items-end justify-between">
-              <p className="text-2xl font-bold text-gray-900">{indicador.valor}</p>
-
-              {indicador.tendencia && (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                  <RiseOutlined />
-                  {indicador.tendencia}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-5 w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-base font-bold text-gray-900">Vacinas entregues por dia</h2>
-            <p className="text-sm text-gray-500">Janela de Maio</p>
-          </div>
-          <span className="flex items-center gap-1 text-sm font-medium text-emerald-600">
-            <RiseOutlined />
-            +8.4% vs. mês anterior
-          </span>
+      <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-5">
+        <div className="xl:col-span-3">
+          <CardVacinasPorDia />
         </div>
-
-        <GraficoVacinasPorDia />
+        <div className="xl:col-span-2">
+          <GraficoDonut titulo="Funcionários" segmentos={FUNCIONARIOS} />
+        </div>
+        <div className="xl:col-span-3">
+          <TabelaLotes />
+        </div>
+        <div className="xl:col-span-2">
+          <GraficoDonut titulo="Campanhas e avisos" segmentos={CAMPANHAS} />
+        </div>
       </div>
     </div>
   );

@@ -17,3 +17,19 @@ export function logout(): void {
 export function isAuthenticated(): boolean {
   return localStorage.getItem(SESSION_KEY) === 'true';
 }
+
+// ---------------------------------------------------------------------------
+// Recuperação de acesso por código (simulada até o backend existir)
+// ---------------------------------------------------------------------------
+
+// Código aceito pela simulação. Com o backend, o código é gerado e enviado
+// por email, e a conferência passa a ser feita no servidor.
+const MOCK_ACCESS_CODE = '123456';
+
+export async function requestAccessCode(_cpf: string, _unitCode: string): Promise<void> {
+  // Futuramente: pedir ao backend o envio do código para o email do profissional.
+}
+
+export async function verifyAccessCode(_cpf: string, _unitCode: string, code: string): Promise<boolean> {
+  return code === MOCK_ACCESS_CODE;
+}

@@ -7,7 +7,8 @@ import { useUser } from '../../../hooks/useUser';
 // localmente, deixando o ponto de integração pronto para o futuro.
 function SecurityTab() {
   const { changePassword } = useUser();
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  // A verificação em duas etapas começa desligada.
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

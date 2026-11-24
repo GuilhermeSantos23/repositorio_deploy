@@ -1,733 +1,482 @@
-import { useState, type ReactNode } from 'react';
-import {
-  SearchOutlined,
-  UserOutlined,
-  CheckCircleFilled,
-  CheckOutlined,
-} from '@ant-design/icons';
-import { Select, Radio, Input, Alert } from 'antd';
-import { maskCPF } from '../../utils/masks';
-import { RECORTES } from '../../data/vaccinesData';
-import { UNIT_NAME, type Patient } from '../../data/mockPatients';
-import { MOCK_PROFESSIONALS } from '../../data/mockProfessionals';
-import { SENSITIVE_CONDITIONS, type RecorteId, type SensitiveCondition } from '../../types/vaccine';
+import { useMemo, useRef, useState } from 'react';
+import type { Patient } from '../../types/patient';
+import type { RecorteId, SensitiveCondition } from '../../types/vaccine';
 import type { VaccinationRecord } from '../../types/vaccinationRecord';
-import VaccinationBookletView from '../../components/VaccinationBookletView';
-import { findPatientByCpf } from '../../services/cpfService';
-import { getPatientBooklet, saveBookletRecord, updateBookletRecord } from '../../services/cadernetaService';
+import { searchCitizen } from '../../services/cpfService';
+import { getPatientBooklet, saveBooklet } from '../../services/cadernetaService';
+import { saveCitizenRegistration } from '../../services/citizenService';
 import { registerCadernetaRegistration } from '../../services/dashboardService';
-import { isValidApplicationDate } from '../../utils/dateRules';
-import { useUser } from '../../hooks/useUser';
+import { calculateAge, getRecorteByAge, isRecorteAvailableForAge } from '../../utils/ageRules';
+import { getTodayDateString } from '../../utils/dateRules';
+import { brazilianDateToIso, formatAnyDate } from '../../utils/formatDate';
+import { RECORTES } from '../../data/vaccinesData';
+import {
+  hasErrors,
+  validateCitizenSearch,
+  type CitizenSearchErrors,
+} from '../../utils/applicationRules';
+import { validateCitizenForm, type CitizenFormErrors, type CitizenFormValues } from '../../utils/citizenRules';
+import {
+  buildRecordsFromCards,
+  buildVaccineCards,
+  entriesFromRecords,
+  validateCardEntry,
+  type CardEntries,
+  type CardEntry,
+} from '../../utils/vaccineCards';
+import VaccinationBookletView from '../../components/VaccinationBookletView';
+import StepIndicator from '../../components/aplicacao/StepIndicator';
+import CitizenSearchForm from '../../components/aplicacao/CitizenSearchForm';
+import PatientSummary from '../../components/aplicacao/PatientSummary';
+import ApplicationReview from '../../components/aplicacao/ApplicationReview';
+import { Section, primaryButton, secondaryButton } from '../../components/aplicacao/Section';
+import CitizenRegistrationForm from '../../components/caderneta/CitizenRegistrationForm';
+import SensitiveConditionStep, { type HasCondition } from '../../components/caderneta/SensitiveConditionStep';
+import VaccineCardsStep from '../../components/caderneta/VaccineCardsStep';
 
-// Mesma regra usada em Aplicações: o profissional inicia com quem está
-// logado (comparando o nome sem o prefixo Dr./Dra.), podendo ser trocado
-// por outro profissional da unidade.
-function normalizeName(name: string) {
-  return name.replace(/^(dr\.?|dra\.?)\s+/i, '').trim().toLowerCase();
-}
+type Step = 'pesquisar' | 'cadastro' | 'condicao' | 'vacinas' | 'revisao' | 'concluido';
+type Mode = 'cadastrar' | 'alterar';
 
-type Step = 'pesquisar' | 'paciente' | 'cadastro' | 'revisao' | 'concluido';
+const STEP_LABELS = ['Pesquisa', 'Cadastro do cidadão', 'Condição sensível', 'Vacinas', 'Revisão'];
+const STEP_INDEX: Record<Step, number> = { pesquisar: 0, cadastro: 1, condicao: 2, vacinas: 3, revisao: 4, concluido: 4 };
 
-type TipoRegistro = 'aplicada' | 'nao-realizada';
-
-// Estrutura do registro usada pelo fluxo atual e preparada para o
-// futuro envio ao backend.
-interface RegistroCaderneta {
-  recorteId: RecorteId;
-  momentoId: string;
-  vacinaId: string;
-  vacinaNome: string;
-  tipo: TipoRegistro;
-  condicaoSensivel?: SensitiveCondition;
-  doseId?: string;
-  doseLabel?: string;
-  data?: string;
-  unidade?: string;
-  profissional?: string;
-  cofen?: string;
-  justificativaNaoRealizada?: string;
-}
-
-const STEP_LABELS: { key: Step; label: string }[] = [
-  { key: 'pesquisar', label: 'Pesquisar' },
-  { key: 'paciente', label: 'Paciente' },
-  { key: 'cadastro', label: 'Cadastro' },
-  { key: 'revisao', label: 'Revisão' },
-];
-
-function StepIndicator({ current }: { current: Step }) {
-  const currentIndex = STEP_LABELS.findIndex((step) => step.key === current);
-
-  return (
-    <div className="mb-6 flex flex-wrap items-center gap-3">
-      {STEP_LABELS.map((step, index) => {
-        const isDone = index < currentIndex;
-        const isCurrent = index === currentIndex;
-
-        return (
-          <div key={step.key} className="flex items-center gap-2">
-            <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                isDone
-                  ? 'bg-emerald-600 text-white'
-                  : isCurrent
-                    ? 'bg-emerald-950 text-white'
-                    : 'bg-gray-200 text-gray-500'
-              }`}
-            >
-              {isDone ? <CheckOutlined className="text-[10px]" /> : index + 1}
-            </span>
-            <span
-              className={`text-sm ${isCurrent ? 'font-semibold text-gray-900' : 'text-gray-500'}`}
-            >
-              {step.label}
-            </span>
-            {index < STEP_LABELS.length - 1 && (
-              <span className="mx-1 h-px w-6 bg-gray-200" />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Card({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">{children}</div>
-  );
-}
+const emptyForm: CitizenFormValues = { email: '', motherName: '', fatherName: '', susCard: '', gender: '' };
 
 function Caderneta() {
   const [step, setStep] = useState<Step>('pesquisar');
-  const [bookletMode, setBookletMode] = useState<'none' | 'view' | 'select-edit'>('none');
-  const [selectedRecord, setSelectedRecord] = useState<VaccinationRecord | null>(null);
-  const [bookletRecords, setBookletRecords] = useState<VaccinationRecord[]>([]);
+  const [mode, setMode] = useState<Mode>('cadastrar');
 
+  // Pesquisa
   const [cpf, setCpf] = useState('');
-  const [searched, setSearched] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
+  const [searchErrors, setSearchErrors] = useState<CitizenSearchErrors>({});
+  const [searchError, setSearchError] = useState('');
+  const [searching, setSearching] = useState(false);
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [records, setRecords] = useState<VaccinationRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
-  const [recorteId, setRecorteId] = useState<RecorteId>(RECORTES[0].id);
-  const [momentoId, setMomentoId] = useState<string | undefined>();
-  const [tipo, setTipo] = useState<TipoRegistro>('aplicada');
-  const [vacinaId, setVacinaId] = useState<string | undefined>();
-  const [doseId, setDoseId] = useState<string | undefined>();
-  const [data, setData] = useState('');
-  // A unidade é fixa (UBS Pimentas). O profissional inicia com o
-  // profissional logado, mas pode ser trocado por outro da mesma unidade —
-  // o CRM sempre acompanha automaticamente quem estiver selecionado.
-  const { userName } = useUser();
-  const [profissionalId, setProfissionalId] = useState<string | undefined>();
-  const [justificativaNaoRealizada, setJustificativaNaoRealizada] = useState('');
+  // Cadastro. Tudo fica aqui para ser preservado ao voltar entre as etapas.
+  const [form, setForm] = useState<CitizenFormValues>(emptyForm);
+  const [formErrors, setFormErrors] = useState<CitizenFormErrors>({});
+  const [hasCondition, setHasCondition] = useState<HasCondition | undefined>();
+  const [condition, setCondition] = useState<SensitiveCondition | undefined>();
+  const [conditionError, setConditionError] = useState('');
+  const [entries, setEntries] = useState<CardEntries>({});
+  const [activeTab, setActiveTab] = useState<RecorteId>('crianca');
+  const [showCardErrors, setShowCardErrors] = useState(false);
+  const [cardsError, setCardsError] = useState('');
 
-  // A condição sensível pertence ao cadastro do cidadão e pode ser atualizada
-  // durante o cadastro/alteração da caderneta. Não há justificativa neste ponto.
-  const [possuiCondicaoSensivel, setPossuiCondicaoSensivel] = useState<'sim' | 'nao'>('nao');
-  const [condicaoSensivel, setCondicaoSensivel] = useState<SensitiveCondition | undefined>();
+  // Confirmação
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [bookletOpen, setBookletOpen] = useState(false);
 
-  const recorteAtual = RECORTES.find((recorte) => recorte.id === recorteId)!;
-  const momentoAtual = recorteAtual.moments.find((momento) => momento.id === momentoId);
-  const vacinaAtual = momentoAtual?.vaccines.find((vacina) => vacina.id === vacinaId);
-  const loggedProfessional =
-    MOCK_PROFESSIONALS.find((item) => normalizeName(item.name) === normalizeName(userName)) ??
-    MOCK_PROFESSIONALS[0];
-  const profissionalAtual =
-    MOCK_PROFESSIONALS.find((item) => item.id === profissionalId) ?? loggedProfessional;
+  const age = patient ? calculateAge(patient.birthDate) : 0;
+  const birthDateIso = patient ? brazilianDateToIso(patient.birthDate) : '';
+  const cards = useMemo(() => buildVaccineCards(age), [age]);
+  const allCards = useMemo(() => Object.values(cards).flat(), [cards]);
+  const sensitiveCondition = hasCondition === 'sim' ? condition : undefined;
 
-  // Hoje a busca usa mocks. A consulta real por CPF será integrada
-  // posteriormente, preservando o restante do fluxo da tela.
+  // ---- Pesquisa ----
+
   async function handleSearch() {
-    const found = await findPatientByCpf(cpf);
+    const errors = validateCitizenSearch(cpf, birthDate);
+    setSearchErrors(errors);
+    setSearchError('');
+    if (hasErrors(errors)) return;
 
-    setPatient(found);
-    setSearched(true);
-    setStep('paciente');
+    setSearching(true);
+    try {
+      const result = await searchCitizen(cpf, birthDate);
+      if (result.status === 'not-found') {
+        setSearchError('CPF não encontrado. Verifique o número e digite novamente.');
+      } else if (result.status === 'birth-date-mismatch') {
+        setSearchError('A data de nascimento não confere com o CPF informado.');
+      } else {
+        setPatient(result.patient);
+      }
+    } catch {
+      setSearchError('Não foi possível consultar o cidadão. Tente novamente.');
+    } finally {
+      setSearching(false);
+    }
   }
 
-  // Usado quando o CPF pesquisado não corresponde a nenhum cidadão, para o
-  // profissional não ficar preso na tela de resultado (mesma regra usada em
-  // Aplicações).
-  function handleVoltarPesquisa() {
+  function resetAll() {
     setStep('pesquisar');
     setCpf('');
-    setSearched(false);
+    setBirthDate('');
+    setSearchErrors({});
+    setSearchError('');
     setPatient(null);
+    setRecords([]);
+    setLoadError('');
+    setForm(emptyForm);
+    setFormErrors({});
+    setHasCondition(undefined);
+    setCondition(undefined);
+    setConditionError('');
+    setEntries({});
+    setShowCardErrors(false);
+    setCardsError('');
+    setSubmitError('');
   }
 
-  function handleOpenCadastro() {
-    setPossuiCondicaoSensivel(patient?.sensitiveCondition ? 'sim' : 'nao');
-    setCondicaoSensivel(patient?.sensitiveCondition);
-    setStep('cadastro');
-  }
+  // ---- Visualização e início do cadastro/alteração ----
 
-  async function handleVisualizar() {
-    if (!patient?.hasCaderneta) return;
-    setBookletRecords(await getPatientBooklet(patient));
-    setSelectedRecord(null);
-    setBookletMode('view');
-  }
-
-  async function handleIniciarAlteracao() {
-    if (!patient?.hasCaderneta) return;
-    setBookletRecords(await getPatientBooklet(patient));
-    setSelectedRecord(null);
-    setBookletMode('select-edit');
-  }
-
-  function handleEditSelected(record: VaccinationRecord) {
-    setSelectedRecord(record);
-    setRecorteId(record.recorteId);
-    setMomentoId(record.momentoId);
-    setVacinaId(record.vacinaId);
-    setDoseId(record.doseId);
-    setTipo(record.status);
-    setData(record.data ?? '');
-    setProfissionalId(
-      MOCK_PROFESSIONALS.find((item) => item.name === record.profissional)?.id ??
-        MOCK_PROFESSIONALS[0]?.id,
-    );
-    setJustificativaNaoRealizada(record.justificativa ?? '');
-    setPossuiCondicaoSensivel(patient?.sensitiveCondition ? 'sim' : 'nao');
-    setCondicaoSensivel(patient?.sensitiveCondition);
-    setBookletMode('none');
-    setStep('cadastro');
-  }
-
-  function handleRecorteChange(id: RecorteId) {
-    setRecorteId(id);
-    setMomentoId(undefined);
-    setVacinaId(undefined);
-    setDoseId(undefined);
-  }
-
-  function handleMomentoChange(id: string) {
-    setMomentoId(id);
-    setVacinaId(undefined);
-    setDoseId(undefined);
-  }
-
-  function handleVacinaChange(id: string) {
-    setVacinaId(id);
-    setDoseId(undefined);
-  }
-
-  function handleReiniciar() {
-    setStep('pesquisar');
-    setBookletMode('none');
-    setSelectedRecord(null);
-    setCpf('');
-    setSearched(false);
-    setPatient(null);
-    setBookletRecords([]);
-    setMomentoId(undefined);
-    setVacinaId(undefined);
-    setDoseId(undefined);
-    setData('');
-    setProfissionalId(undefined);
-    setJustificativaNaoRealizada('');
-    setPossuiCondicaoSensivel('nao');
-    setCondicaoSensivel(undefined);
-  }
-
-  // Monta o registro final para a futura integração com o backend.
-  // Por enquanto, apenas o fluxo local é executado.
-  async function handleCadastrar() {
-    if (!vacinaAtual || !momentoAtual) return;
-
-    const registro: RegistroCaderneta = {
-      recorteId,
-      momentoId: momentoAtual.id,
-      vacinaId: vacinaAtual.id,
-      vacinaNome: vacinaAtual.name,
-      tipo,
-      ...(possuiCondicaoSensivel === 'sim' && condicaoSensivel
-        ? { condicaoSensivel }
-        : {}),
-      ...(tipo === 'aplicada'
-        ? {
-            doseId,
-            doseLabel: vacinaAtual.doses.find((dose) => dose.id === doseId)?.label,
-            data,
-            unidade: UNIT_NAME,
-            profissional: profissionalAtual?.name,
-            cofen: profissionalAtual?.cofen,
-          }
-        : { justificativaNaoRealizada }),
-    };
-
+  async function handleViewBooklet() {
     if (!patient) return;
+    setLoading(true);
+    setLoadError('');
+    try {
+      setRecords(await getPatientBooklet(patient));
+      setBookletOpen(true);
+    } catch {
+      setLoadError('Não foi possível carregar a caderneta. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const recordData = {
-      patientCpf: patient.cpfFormatted,
-      recorteId: registro.recorteId,
-      momentoId: registro.momentoId,
-      momentoLabel: momentoAtual.label,
-      vacinaId: registro.vacinaId,
-      vacinaNome: registro.vacinaNome,
-      doseId: registro.doseId ?? '',
-      doseLabel: registro.doseLabel ?? 'Não informado',
-      status: registro.tipo,
-      ...(registro.data ? { data: registro.data } : {}),
-      ...(registro.unidade ? { unidade: registro.unidade } : {}),
-      ...(registro.profissional ? { profissional: registro.profissional } : {}),
-      ...(registro.cofen ? { cofen: registro.cofen } : {}),
-      ...(registro.justificativaNaoRealizada
-        ? { justificativa: registro.justificativaNaoRealizada }
-        : {}),
-      ...(registro.condicaoSensivel ? { condicaoSensivel: registro.condicaoSensivel } : {}),
-    };
-
-    if (selectedRecord) {
-      await updateBookletRecord({ id: selectedRecord.id, ...recordData });
-    } else {
-      await saveBookletRecord({
-        patientCpf: patient.cpfFormatted,
-        record: recordData,
+  async function handleStart(nextMode: Mode) {
+    if (!patient) return;
+    setLoading(true);
+    setLoadError('');
+    try {
+      const existing = nextMode === 'alterar' ? await getPatientBooklet(patient) : [];
+      setRecords(existing);
+      setMode(nextMode);
+      setForm({
+        email: patient.email ?? '',
+        motherName: patient.motherName ?? '',
+        fatherName: patient.fatherName ?? '',
+        susCard: patient.susCard && /\d/.test(patient.susCard) ? patient.susCard : '',
+        gender: patient.gender ?? '',
       });
+      setHasCondition(nextMode === 'alterar' ? (patient.sensitiveCondition ? 'sim' : 'nao') : undefined);
+      setCondition(patient.sensitiveCondition);
+      setEntries(entriesFromRecords(existing));
+      setActiveTab(getRecorteByAge(age));
+      setFormErrors({});
+      setStep('cadastro');
+    } catch {
+      setLoadError('Não foi possível carregar a caderneta do cidadão. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---- Avanço entre etapas ----
+
+  function handleContinueRegistration() {
+    const errors = validateCitizenForm(form);
+    setFormErrors(errors);
+    if (!hasErrors(errors)) setStep('condicao');
+  }
+
+  function handleContinueCondition() {
+    if (!hasCondition) {
+      setConditionError('Informe se o cidadão possui ou não condição sensível.');
+    } else if (hasCondition === 'sim' && !condition) {
+      setConditionError('Selecione a condição sensível.');
+    } else {
+      setConditionError('');
+      setStep('vacinas');
+    }
+  }
+
+  function getCardProblems(): { missing: number; invalid: number; firstTab?: RecorteId } {
+    let missing = 0;
+    let invalid = 0;
+    let firstTab: RecorteId | undefined;
+
+    for (const card of allCards) {
+      const entry = entries[card.key];
+      const entryErrors = entry ? validateCardEntry(entry, birthDateIso, getTodayDateString()) : {};
+      const isMissing = !entry;
+      const isInvalid = hasErrors(entryErrors);
+
+      if (isMissing) missing += 1;
+      if (isInvalid) invalid += 1;
+      if ((isMissing || isInvalid) && !firstTab) firstTab = card.recorteId;
+    }
+    return { missing, invalid, firstTab };
+  }
+
+  function handleReview() {
+    const { missing, invalid, firstTab } = getCardProblems();
+    if (missing === 0 && invalid === 0) {
+      setShowCardErrors(false);
+      setCardsError('');
+      setStep('revisao');
+      return;
     }
 
-    registerCadernetaRegistration();
-    setStep('concluido');
+    setShowCardErrors(true);
+    setCardsError(
+      [
+        missing > 0 ? `${missing} dose(s) sem marcação de tomada ou não tomada` : '',
+        invalid > 0 ? `${invalid} card(s) com dados inválidos` : '',
+      ].filter(Boolean).join(' e ') + '. Corrija para continuar.',
+    );
+    if (firstTab) setActiveTab(firstTab);
   }
 
-  const podeRevisar =
-    Boolean(possuiCondicaoSensivel === 'nao' || condicaoSensivel) &&
-    (tipo === 'aplicada'
-      ? Boolean(vacinaId && doseId && (!data || isValidApplicationDate(data)))
-      : Boolean(vacinaId && justificativaNaoRealizada.trim()));
+  // ---- Cards ----
+
+  function handleStatusChange(key: string, status: CardEntry['status']) {
+    setEntries((current) => ({
+      ...current,
+      // Ao trocar para "não tomada" os dados de aplicação deixam de valer.
+      [key]: status === 'aplicada' ? { ...current[key], status } : { status },
+    }));
+  }
+
+  function handleFieldChange(key: string, changes: Partial<CardEntry>) {
+    setEntries((current) => ({ ...current, [key]: { ...current[key], ...changes } }));
+  }
+
+  function handleMarkPending(recorteId: RecorteId) {
+    setEntries((current) => {
+      const next = { ...current };
+      cards[recorteId].forEach((card) => {
+        if (!next[card.key]) next[card.key] = { status: 'nao-realizada' };
+      });
+      return next;
+    });
+  }
+
+  // ---- Revisão e confirmação ----
+
+  // Citizen e caderneta como ficarão depois de confirmar. Usados na revisão,
+  // na pré-visualização e no salvamento, para que os três sejam sempre iguais.
+  const draftPatient: Patient | null = patient
+    ? {
+        ...patient,
+        email: form.email.trim(),
+        motherName: form.motherName.trim(),
+        fatherName: form.fatherName.trim(),
+        susCard: form.susCard.trim() || undefined,
+        gender: form.gender || undefined,
+        sensitiveCondition,
+        hasCaderneta: true,
+      }
+    : null;
+  const draftRecords = patient
+    ? buildRecordsFromCards({ patientCpf: patient.cpfFormatted, cards: allCards, entries, previousRecords: records })
+    : [];
+  const takenCount = draftRecords.filter((record) => record.status === 'aplicada').length;
+  const notTakenCount = draftRecords.length - takenCount;
+
+  async function handleConfirm() {
+    if (submittingRef.current || !patient || !draftPatient) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError('');
+
+    try {
+      await saveCitizenRegistration(patient.cpfFormatted, {
+        email: draftPatient.email,
+        gender: draftPatient.gender,
+        susCard: draftPatient.susCard,
+        motherName: draftPatient.motherName,
+        fatherName: draftPatient.fatherName,
+        sensitiveCondition,
+      });
+      await saveBooklet(patient.cpfFormatted, draftRecords);
+      registerCadernetaRegistration();
+
+      // A tela só mostra sucesso depois que tudo foi salvo.
+      setPatient(draftPatient);
+      setRecords(draftRecords);
+      setStep('concluido');
+    } catch {
+      setSubmitError('Não foi possível salvar a caderneta. Nenhuma alteração foi confirmada; tente novamente.');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }
+
+  const reviewGroups = draftPatient
+    ? [
+        {
+          title: 'Cidadão',
+          items: [
+            { label: 'Nome', value: draftPatient.name },
+            { label: 'CPF', value: draftPatient.cpfFormatted },
+            { label: 'Data de nascimento', value: formatAnyDate(draftPatient.birthDate) },
+            { label: 'E-mail', value: draftPatient.email || 'Não informado' },
+            { label: 'Nome da mãe', value: draftPatient.motherName || 'Não informado' },
+            { label: 'Nome do pai', value: draftPatient.fatherName || 'Não informado' },
+            { label: 'Cartão SUS', value: draftPatient.susCard || 'Não informado' },
+            { label: 'Gênero', value: draftPatient.gender || 'Não informado' },
+            { label: 'Condição sensível', value: sensitiveCondition ?? 'Não possui' },
+          ],
+        },
+        {
+          title: 'Caderneta',
+          items: [
+            { label: 'Doses tomadas (aplicadas)', value: String(takenCount) },
+            { label: 'Doses não tomadas', value: String(notTakenCount) },
+          ],
+        },
+      ]
+    : [];
+
+  const isAlteration = mode === 'alterar';
 
   return (
-    <div className="w-full max-w-5xl">
-      <p className="text-sm text-gray-500">Cadernetas</p>
-      <h1 className="text-2xl font-bold text-gray-800">
-        {patient?.hasCaderneta ? 'Alteração de caderneta' : 'Cadastro de caderneta'}
-      </h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Localize o cidadão e registre as informações da caderneta.
-      </p>
+    <div className="w-full max-w-4xl">
+      <header className="mb-6">
+        <p className="text-sm text-gray-500">Cadernetas</p>
+        <h1 className="text-2xl font-bold text-gray-800">
+          {isAlteration ? 'Alteração de caderneta' : 'Cadastro de caderneta'}
+        </h1>
+      </header>
 
-      {bookletMode !== 'none' && patient && (
-        <VaccinationBookletView
-          patient={patient}
-          records={bookletRecords}
-          selectionMode={bookletMode === 'select-edit'}
-          onBack={() => setBookletMode('none')}
-          onEditSelected={handleEditSelected}
+      <StepIndicator current={STEP_INDEX[step]} steps={STEP_LABELS} />
+
+      {patient && step !== 'pesquisar' && step !== 'concluido' && (
+        <PatientSummary compact patient={patient} onChangeCitizen={resetAll} />
+      )}
+
+      {loadError && (
+        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{loadError}</p>
+      )}
+
+      {step === 'pesquisar' && !patient && (
+        <CitizenSearchForm
+          cpf={cpf}
+          birthDate={birthDate}
+          errors={searchErrors}
+          searchError={searchError}
+          loading={searching}
+          onChange={(next) => { setCpf(next.cpf); setBirthDate(next.birthDate); }}
+          onSubmit={handleSearch}
         />
       )}
 
-      {bookletMode === 'none' && <div className="mt-6">
-        <StepIndicator current={step} />
-      </div>}
-
-      {bookletMode === 'none' && step === 'pesquisar' && (
-        <Card>
-          <div className="flex items-center gap-2 text-emerald-700">
-            <SearchOutlined />
-            <h2 className="font-semibold text-gray-900">Pesquisar cidadão</h2>
-          </div>
-          <p className="mt-1 text-sm text-gray-500">Informe o CPF do cidadão.</p>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={cpf}
-              onChange={(event) => setCpf(maskCPF(event.target.value))}
-              placeholder="000.000.000-00"
-              inputMode="numeric"
-              className="w-full flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              disabled={!cpf.trim()}
-              className="rounded-lg bg-emerald-300 px-5 py-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Pesquisar
-            </button>
-          </div>
-
-          {searched && !patient && (
-            <p className="mt-3 text-sm text-gray-500">
-              Cidadão não encontrado. Verifique o CPF informado e tente novamente.
-            </p>
-          )}
-        </Card>
-      )}
-
-      {bookletMode === 'none' && step === 'paciente' && (
-        <Card>
-          <h2 className="mb-4 font-semibold text-gray-900">Cidadão encontrado</h2>
-
-          {patient ? (
-            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                  <UserOutlined />
-                </span>
-                <div>
-                  <p className="font-semibold text-gray-900">{patient.name}</p>
-                  <p className="text-sm text-gray-500">
-                    CPF {patient.cpfFormatted} · {patient.age} anos
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {patient.hasCaderneta ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleVisualizar}
-                      className="rounded-lg bg-emerald-950 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-900"
-                    >
-                      Visualizar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleIniciarAlteracao}
-                      className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-                    >
-                      Alterar
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleOpenCadastro}
-                    className="rounded-lg bg-emerald-300 px-5 py-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-                  >
-                    Cadastrar caderneta
-                  </button>
-                )}
-              </div>
+      {step === 'pesquisar' && patient && (
+        <>
+          <PatientSummary patient={patient} onChangeCitizen={resetAll} />
+          {patient.hasCaderneta ? (
+            <div className="mt-4 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={handleViewBooklet} disabled={loading} className={secondaryButton}>Visualizar caderneta</button>
+              <button type="button" onClick={() => handleStart('alterar')} disabled={loading} className={primaryButton}>Alterar caderneta</button>
             </div>
           ) : (
-            <div>
-              <Alert
-                type="warning"
-                showIcon
-                message="Cidadão não encontrado"
-                description="Verifique o CPF informado e tente novamente."
-              />
-              <button
-                type="button"
-                onClick={handleVoltarPesquisa}
-                className="mt-4 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Voltar
+            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+              <p className="font-semibold">Este cidadão não possui caderneta cadastrada.</p>
+              <p className="mt-1">Cadastre o cidadão para vincular a caderneta, com ou sem conta no Vac+.</p>
+              <button type="button" onClick={() => handleStart('cadastrar')} disabled={loading} className={`${primaryButton} mt-3`}>
+                Cadastrar cidadão
               </button>
             </div>
           )}
-        </Card>
+        </>
       )}
 
-      {bookletMode === 'none' && step === 'cadastro' && (
-        <div className="flex flex-col gap-4">
-          <Card>
-            <h2 className="mb-3 font-semibold text-gray-900">
-              O cidadão possui condição sensível?
-            </h2>
-            <Select
-              value={possuiCondicaoSensivel}
-              onChange={(value) => {
-                setPossuiCondicaoSensivel(value);
-                if (value === 'nao') setCondicaoSensivel(undefined);
-              }}
-              className="w-full sm:w-64"
-              options={[
-                { value: 'nao', label: 'Não' },
-                { value: 'sim', label: 'Sim' },
-              ]}
-            />
-
-            {possuiCondicaoSensivel === 'sim' && (
-              <div className="mt-4">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Condição sensível
-                </label>
-                <Select
-                  value={condicaoSensivel}
-                  onChange={setCondicaoSensivel}
-                  placeholder="Selecione a condição"
-                  className="w-full sm:w-80"
-                  options={SENSITIVE_CONDITIONS.map((condition) => ({
-                    value: condition,
-                    label: condition,
-                  }))}
-                />
-              </div>
-            )}
-          </Card>
-
-          <Card>
-            <h2 className="mb-3 font-semibold text-gray-900">Caderneta inteligente</h2>
-
-            <div className="flex flex-wrap gap-1 border-b border-gray-100 pb-2">
-              {RECORTES.map((recorte) => (
-                <button
-                  key={recorte.id}
-                  type="button"
-                  onClick={() => handleRecorteChange(recorte.id)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                    recorte.id === recorteId
-                      ? 'bg-emerald-950 text-white'
-                      : 'text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  {recorte.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Momento</label>
-                <Select
-                  value={momentoId}
-                  onChange={handleMomentoChange}
-                  placeholder="Selecione"
-                  className="w-full"
-                  options={recorteAtual.moments.map((momento) => ({
-                    value: momento.id,
-                    label: momento.label,
-                  }))}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Tipo de registro
-                </label>
-                <Radio.Group
-                  value={tipo}
-                  onChange={(event) => setTipo(event.target.value)}
-                  optionType="button"
-                  buttonStyle="solid"
-                  options={[
-                    { value: 'aplicada', label: 'Vacina aplicada' },
-                    { value: 'nao-realizada', label: 'Vacina não realizada' },
-                  ]}
-                />
-              </div>
-            </div>
-
-            {momentoId && (
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Vacina</label>
-                  <Select
-                    value={vacinaId}
-                    onChange={handleVacinaChange}
-                    placeholder="Selecione"
-                    className="w-full"
-                    options={momentoAtual?.vaccines.map((vacina) => ({
-                      value: vacina.id,
-                      label:
-                        vacina.network === 'privada'
-                          ? `${vacina.name} — Opcional`
-                          : vacina.name,
-                    }))}
-                  />
-                </div>
-
-                {tipo === 'aplicada' && (
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Dose</label>
-                    <Select
-                      value={doseId}
-                      onChange={setDoseId}
-                      placeholder="Selecione"
-                      disabled={!vacinaAtual}
-                      className="w-full"
-                      options={vacinaAtual?.doses.map((dose) => ({
-                        value: dose.id,
-                        label: dose.label,
-                      }))}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {vacinaId && tipo === 'nao-realizada' && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="mb-2 text-sm font-medium text-amber-900">
-                  Este registro marca a vacina como não realizada — não é uma aplicação.
-                </p>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Justificativa
-                </label>
-                <Input.TextArea
-                  value={justificativaNaoRealizada}
-                  onChange={(event) => setJustificativaNaoRealizada(event.target.value)}
-                  rows={3}
-                  placeholder="Explique por que a vacina não foi aplicada."
-                />
-              </div>
-            )}
-
-            {vacinaId && tipo === 'aplicada' && (
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Data (opcional)
-                  </label>
-                  <input
-                    type="date"
-                    min="1900-01-01"
-                    max={new Date().toISOString().slice(0, 10)}
-                    value={data}
-                    onChange={(event) => setData(event.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Unidade</label>
-                  <input
-                    value={UNIT_NAME}
-                    disabled
-                    className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Profissional responsável
-                  </label>
-                  <Select
-                    value={profissionalId ?? loggedProfessional.id}
-                    onChange={setProfissionalId}
-                    placeholder="Selecione o profissional"
-                    className="w-full"
-                    options={MOCK_PROFESSIONALS.map((item) => ({ value: item.id, label: item.name }))}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    CRM do profissional
-                  </label>
-                  <input
-                    value={profissionalAtual?.cofen ?? 'Não identificado'}
-                    disabled
-                    className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-between">
-              <button
-                type="button"
-                onClick={() => setStep('paciente')}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep('revisao')}
-                disabled={!podeRevisar}
-                className="rounded-lg bg-emerald-950 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Revisar
-              </button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {bookletMode === 'none' && step === 'revisao' && patient && (
-        <Card>
-          <div className="mb-4 flex items-center gap-2 text-emerald-700">
-            <CheckCircleFilled />
-            <h2 className="font-semibold text-gray-900">Revisão antes do cadastro</h2>
+      {step === 'cadastro' && patient && (
+        <>
+          <CitizenRegistrationForm patient={patient} values={form} errors={formErrors} onChange={(c) => setForm((cur) => ({ ...cur, ...c }))} />
+          <div className="mt-5 flex justify-between">
+            <button type="button" onClick={() => setStep('pesquisar')} className={secondaryButton}>Voltar</button>
+            <button type="button" onClick={handleContinueRegistration} className={primaryButton}>Continuar</button>
           </div>
-          <p className="mb-4 text-sm text-gray-500">Confira as informações antes de concluir.</p>
+        </>
+      )}
 
-          <dl className="flex flex-col divide-y divide-gray-100 text-sm">
-            <Row label="Cidadão" value={patient.name} />
-            <Row
-              label="Possui condição sensível"
-              value={possuiCondicaoSensivel === 'sim' ? 'Sim' : 'Não'}
-            />
-            {possuiCondicaoSensivel === 'sim' && (
-              <Row label="Condição sensível" value={condicaoSensivel || 'Não informado'} />
-            )}
-            <Row label="Recorte" value={recorteAtual.label} />
-            <Row label="Momento" value={momentoAtual?.label ?? 'Não informado'} />
-            <Row label="Vacina" value={vacinaAtual?.name ?? 'Não informado'} />
-            <Row
-              label="Tipo de registro"
-              value={tipo === 'aplicada' ? 'Vacina aplicada' : 'Vacina não realizada'}
-            />
-            {tipo === 'aplicada' ? (
+      {step === 'condicao' && patient && (
+        <>
+          <SensitiveConditionStep
+            hasCondition={hasCondition}
+            condition={condition}
+            error={conditionError}
+            onChange={(has, value) => { setHasCondition(has); setCondition(value); setConditionError(''); }}
+          />
+          <div className="mt-5 flex justify-between">
+            <button type="button" onClick={() => setStep('cadastro')} className={secondaryButton}>Voltar</button>
+            <button type="button" onClick={handleContinueCondition} className={primaryButton}>Continuar</button>
+          </div>
+        </>
+      )}
+
+      {step === 'vacinas' && patient && (
+        <>
+          <VaccineCardsStep
+            cards={cards}
+            age={age}
+            birthDateIso={birthDateIso}
+            entries={entries}
+            activeTab={activeTab}
+            showErrors={showCardErrors}
+            onTabChange={(id) => isRecorteAvailableForAge(id, age) && setActiveTab(id)}
+            onStatusChange={handleStatusChange}
+            onFieldChange={handleFieldChange}
+            onMarkPendingAsNotTaken={handleMarkPending}
+          />
+          {cardsError && (
+            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{cardsError}</p>
+          )}
+          <div className="mt-5 flex justify-between">
+            <button type="button" onClick={() => setStep('condicao')} className={secondaryButton}>Voltar</button>
+            <button type="button" onClick={handleReview} className={primaryButton}>Revisar</button>
+          </div>
+        </>
+      )}
+
+      {step === 'revisao' && patient && draftPatient && (
+        <>
+          <ApplicationReview
+            title="Revisão da caderneta"
+            summary={
               <>
-                <Row
-                  label="Dose"
-                  value={vacinaAtual?.doses.find((d) => d.id === doseId)?.label ?? '—'}
-                />
-                <Row label="Data" value={data || 'Não informada'} />
-                <Row label="Unidade" value={UNIT_NAME} />
-                <Row label="Profissional" value={profissionalAtual?.name ?? 'Não identificado'} />
-                <Row label="COFEN" value={profissionalAtual?.cofen ?? 'Não identificado'} />
+                A caderneta de <strong>{patient.name}</strong> será {isAlteration ? 'atualizada' : 'cadastrada'} com{' '}
+                <strong>{takenCount}</strong> dose(s) tomada(s). Pré-visualize o documento e confirme, ou volte para alterar.
               </>
-            ) : (
-              <Row label="Justificativa" value={justificativaNaoRealizada} />
-            )}
-          </dl>
-
-          <div className="mt-6 flex justify-between">
-            <button
-              type="button"
-              onClick={handleOpenCadastro}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Alterar
-            </button>
-            <button
-              type="button"
-              onClick={handleCadastrar}
-              className="rounded-lg bg-emerald-950 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-900"
-            >
-              {patient.hasCaderneta ? 'Alterar' : 'Cadastrar'}
+            }
+            groups={reviewGroups}
+          >
+            <div className="mt-4">
+              <button type="button" className={secondaryButton} onClick={() => setBookletOpen(true)}>Pré-visualizar caderneta</button>
+            </div>
+          </ApplicationReview>
+          {submitError && (
+            <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{submitError}</p>
+          )}
+          <div className="sticky bottom-20 z-10 mt-5 flex items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 py-3 lg:bottom-0">
+            <button type="button" onClick={() => setStep('vacinas')} disabled={submitting} className={secondaryButton}>Voltar e alterar</button>
+            <button type="button" onClick={handleConfirm} disabled={submitting} className={primaryButton}>
+              {submitting ? 'Salvando...' : isAlteration ? 'Salvar alterações' : 'Cadastrar caderneta'}
             </button>
           </div>
-        </Card>
+        </>
       )}
 
-      {bookletMode === 'none' && step === 'concluido' && patient && (
-        <Card>
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
-              <CheckOutlined />
-            </span>
-            <h2 className="text-lg font-bold text-gray-900">Registro concluído</h2>
-            <p className="text-sm text-gray-500">
-              {patient.name} teve sua caderneta{' '}
-              {patient.hasCaderneta ? 'alterada' : 'cadastrada'} com sucesso.
-            </p>
-            <button
-              type="button"
-              onClick={handleReiniciar}
-              className="mt-2 rounded-lg bg-emerald-300 px-5 py-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-            >
-              Voltar ao início
-            </button>
+      {step === 'concluido' && patient && (
+        <Section title={isAlteration ? 'Caderneta atualizada' : 'Caderneta cadastrada'}>
+          <p className="text-sm text-gray-800">
+            A caderneta de <strong>{patient.name}</strong> foi {isAlteration ? 'atualizada' : 'cadastrada'} com sucesso.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" onClick={handleViewBooklet} disabled={loading} className={primaryButton}>Visualizar caderneta</button>
+            <button type="button" onClick={resetAll} className={secondaryButton}>Novo atendimento</button>
           </div>
-        </Card>
+        </Section>
       )}
-    </div>
-  );
-}
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4 py-2">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="text-right font-medium text-gray-900">{value}</dd>
+      {bookletOpen && patient && (
+        <VaccinationBookletView
+          // Na revisão a pré-visualização mostra o rascunho; nos demais casos, a caderneta salva.
+          patient={step === 'revisao' && draftPatient ? draftPatient : patient}
+          records={step === 'revisao' ? draftRecords : records}
+          onClose={() => setBookletOpen(false)}
+        />
+      )}
     </div>
   );
 }

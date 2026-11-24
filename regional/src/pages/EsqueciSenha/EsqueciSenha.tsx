@@ -8,23 +8,23 @@ import { maskCPF, maskNumeric } from '../../utils/masks';
 import {
   requestPasswordRecovery,
   verifyRecoveryCode,
-  resetPassword,
 } from '../../services/forgotPasswordService';
 
 /**
  * Fluxo de recuperação de senha do administrador.
  *
  * Etapas:
- *   1. cpf         -> identifica a conta pelo CPF (login do administrador)
- *   2. codigo      -> código de verificação enviado ao e-mail cadastrado
- *   3. novaSenha    -> definição da nova senha
- *   4. sucesso      -> confirmação e retorno ao login
+ *   1. cpf     -> identifica a conta pelo CPF
+ *   2. codigo  -> código de verificação enviado ao e-mail cadastrado
+ *   3. acesso  -> código validado, o usuário entra no sistema
+ *
+ * Não há etapa de definir uma nova senha.
  *
  * Ainda não existe backend: cada etapa conversa apenas com
  * src/services/forgotPasswordService.ts (mock). Ver comentários lá
  * para o contrato esperado quando a API real existir.
  */
-type Step = 'cpf' | 'codigo' | 'novaSenha' | 'sucesso';
+type Step = 'cpf' | 'codigo';
 type OverlayStatus = 'validating' | 'success';
 
 interface OverlayConfig {
@@ -44,10 +44,6 @@ function EsqueciSenha() {
 
   const [codigo, setCodigo] = useState('');
   const [erroCodigo, setErroCodigo] = useState('');
-
-  const [novaSenha, setNovaSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [erroSenha, setErroSenha] = useState('');
 
   // Mostra o "check" de sucesso da validação por um instante antes de
   // avançar para a próxima etapa, mantendo o mesmo padrão visual já
@@ -111,45 +107,10 @@ function EsqueciSenha() {
         validatingText: 'Validando código...',
         successText: 'Código correto',
       });
-      setTimeout(() => setStep('novaSenha'), 700);
+      setTimeout(() => navigate('/dashboard', { replace: true }), 700);
     } else {
       setOverlay(null);
       setErroCodigo('Código inválido. Verifique e tente novamente.');
-    }
-  }
-
-  async function handleSubmitNovaSenha(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!novaSenha.trim() || !confirmarSenha.trim()) {
-      setErroSenha('Preencha a nova senha e a confirmação.');
-      return;
-    }
-
-    if (novaSenha !== confirmarSenha) {
-      setErroSenha('As senhas não coincidem.');
-      return;
-    }
-
-    setErroSenha('');
-    setOverlay({
-      status: 'validating',
-      validatingText: 'Salvando nova senha...',
-      successText: 'Senha redefinida',
-    });
-
-    const result = await resetPassword(cpf, codigo, novaSenha);
-
-    if (result.success) {
-      setOverlay({
-        status: 'success',
-        validatingText: 'Salvando nova senha...',
-        successText: 'Senha redefinida',
-      });
-      setTimeout(() => setStep('sucesso'), 700);
-    } else {
-      setOverlay(null);
-      setErroSenha('Não foi possível salvar a nova senha. Tente novamente.');
     }
   }
 
@@ -241,72 +202,6 @@ function EsqueciSenha() {
                 Voltar para o login
               </Link>
             </form>
-          </>
-        )}
-
-        {step === 'novaSenha' && (
-          <>
-            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-              Defina uma nova senha
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Escolha uma nova senha de acesso para a sua conta.
-            </p>
-
-            <form
-              onSubmit={handleSubmitNovaSenha}
-              className="mt-6 flex flex-col gap-4"
-              noValidate
-            >
-              <FormField
-                label="Nova senha"
-                type="password"
-                value={novaSenha}
-                onChange={(event) => setNovaSenha(event.target.value)}
-              />
-
-              <FormField
-                label="Confirmar nova senha"
-                type="password"
-                value={confirmarSenha}
-                onChange={(event) => setConfirmarSenha(event.target.value)}
-                error={erroSenha}
-              />
-
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-lg bg-emerald-300 py-3 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-              >
-                Confirmar
-              </button>
-
-              <Link
-                to="/login"
-                className="text-center text-sm font-medium text-emerald-700 hover:underline"
-              >
-                Voltar para o login
-              </Link>
-            </form>
-          </>
-        )}
-
-        {step === 'sucesso' && (
-          <>
-            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-              Senha redefinida
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Sua senha foi alterada com sucesso. Você já pode entrar com a
-              nova senha.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="mt-6 w-full rounded-lg bg-emerald-300 py-3 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-            >
-              Voltar para o login
-            </button>
           </>
         )}
 

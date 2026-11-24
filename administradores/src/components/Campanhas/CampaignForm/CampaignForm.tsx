@@ -3,6 +3,9 @@ import type { FormEvent } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
 import type { Campaign, CampaignFormData } from '../../../types/campaign';
 import { formatDateBR, getTodayISO } from '../../../utils/date';
+import { VACCINE_NAME_OPTIONS } from '../../../utils/vaccineCatalog';
+
+const PUBLICO_ALVO_MAX = 200;
 
 interface CampaignFormProps {
   /** Campanha sendo editada. Ausente = modo de criação. */
@@ -17,6 +20,8 @@ interface FormErrors {
   title?: string;
   description?: string;
   endDate?: string;
+  disease?: string;
+  targetAudience?: string;
 }
 
 const inputClassName =
@@ -29,6 +34,8 @@ function CampaignForm({ campaign, onSubmit, onCancel, submitting = false }: Camp
   const [description, setDescription] = useState(campaign?.description ?? '');
   const [publishedAt, setPublishedAt] = useState(campaign?.publishedAt ?? getTodayISO());
   const [endDate, setEndDate] = useState(campaign?.endDate ?? '');
+  const [disease, setDisease] = useState(campaign?.disease ?? '');
+  const [targetAudience, setTargetAudience] = useState(campaign?.targetAudience ?? '');
   const [errors, setErrors] = useState<FormErrors>({});
 
   // A data de disponibilização só pode ser editada na criação, ou na
@@ -46,6 +53,11 @@ function CampaignForm({ campaign, onSubmit, onCancel, submitting = false }: Camp
       novosErros.endDate = 'A data de encerramento não pode ser anterior à data de disponibilização.';
     }
 
+    if (!disease) novosErros.disease = 'Selecione a doença da campanha.';
+    if (targetAudience.length > PUBLICO_ALVO_MAX) {
+      novosErros.targetAudience = `O público-alvo pode ter no máximo ${PUBLICO_ALVO_MAX} caracteres.`;
+    }
+
     return novosErros;
   }
 
@@ -56,7 +68,7 @@ function CampaignForm({ campaign, onSubmit, onCancel, submitting = false }: Camp
     setErrors(novosErros);
     if (Object.keys(novosErros).length > 0) return;
 
-    onSubmit({ title, description, publishedAt, endDate });
+    onSubmit({ title, description, publishedAt, endDate, disease, targetAudience });
   }
 
   return (
@@ -109,6 +121,42 @@ function CampaignForm({ campaign, onSubmit, onCancel, submitting = false }: Camp
                   placeholder="Digite a descrição da campanha"
                 />
                 {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-900">Doença</label>
+                <select
+                  className={`${inputClassName} ${errors.disease ? 'border-red-400' : 'border-gray-300'}`}
+                  value={disease}
+                  onChange={(e) => setDisease(e.target.value)}
+                >
+                  <option value="">Selecione a doença</option>
+                  {VACCINE_NAME_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                {errors.disease && <p className="mt-1 text-xs text-red-500">{errors.disease}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-900">Público-alvo</label>
+                <textarea
+                  className={`${inputClassName} min-h-[72px] resize-none ${
+                    errors.targetAudience ? 'border-red-400' : 'border-gray-300'
+                  }`}
+                  value={targetAudience}
+                  maxLength={PUBLICO_ALVO_MAX}
+                  onChange={(e) => setTargetAudience(e.target.value.slice(0, PUBLICO_ALVO_MAX))}
+                  placeholder="Descreva o público que a campanha pretende atingir"
+                />
+                <p className="mt-1 text-right text-xs text-gray-400">
+                  {targetAudience.length}/{PUBLICO_ALVO_MAX}
+                </p>
+                {errors.targetAudience && (
+                  <p className="mt-1 text-xs text-red-500">{errors.targetAudience}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

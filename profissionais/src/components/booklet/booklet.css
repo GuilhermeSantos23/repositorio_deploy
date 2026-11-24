@@ -1,0 +1,504 @@
+/* Caderneta de vacinação: folhas A4 para tela e impressão.
+   Tamanho de página: 210 mm x 296,5 mm (a meia linha a menos evita que o
+   navegador gere uma folha em branco extra ao imprimir). */
+
+.bk-overlay {
+  --bk-ink: #1f2933;
+  --bk-muted: #5b6670;
+  --bk-rule: #cfd6d2;
+  --bk-green: #065f46;
+  --bk-green-soft: #ecf5f1;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #e5e9e6;
+  font-family: system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* ---------- Barra de ferramentas (somente tela) ---------- */
+
+.bk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #d4dad6;
+}
+
+.bk-toolbar__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.bk-toolbar__hint {
+  margin: 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+.bk-toolbar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bk-button {
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.bk-button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.bk-button--primary {
+  border-color: #064e3b;
+  background: #064e3b;
+  color: #fff;
+}
+
+.bk-button--primary:hover:not(:disabled) {
+  background: #065f46;
+}
+
+.bk-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---------- Área das folhas: as folhas empilham, ninguém rola dentro delas ---------- */
+
+.bk-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.bk-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.bk-sheet {
+  flex: none;
+}
+
+.bk-sheet__inner {
+  transform-origin: top left;
+}
+
+.bk-loading {
+  margin: 48px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* Contêiner invisível usado só para medir a altura real dos registros. */
+.bk-measure {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---------- Folha ---------- */
+
+.bk-page,
+.bk-page * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.bk-page {
+  display: flex;
+  flex-direction: column;
+  width: 210mm;
+  height: 296.5mm;
+  padding: 16mm 20mm 12mm;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #cfd6d2;
+  color: var(--bk-ink, #1f2933);
+  font-size: 10pt;
+  line-height: 1.4;
+  position: relative;
+}
+
+.bk-page__header,
+.bk-page__footer {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8mm;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--bk-muted, #5b6670);
+}
+
+.bk-page__header {
+  height: 9mm;
+  border-bottom: 0.4mm solid var(--bk-green, #065f46);
+  font-size: 8.5pt;
+}
+
+.bk-wordmark {
+  font-size: 11pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-page__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: 7mm;
+}
+
+.bk-page__footer {
+  height: 8mm;
+  align-items: flex-end;
+  border-top: 0.2mm solid var(--bk-rule, #cfd6d2);
+  font-size: 8pt;
+}
+
+.bk-page__footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bk-page__footer span:last-child {
+  flex: none;
+}
+
+/* Título de seção: sempre em uma única linha. */
+.bk-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6mm;
+  height: 9mm;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bk-section h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14pt;
+  font-weight: 700;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-section span {
+  flex: none;
+  font-size: 8.5pt;
+  color: var(--bk-muted, #5b6670);
+}
+
+/* ---------- Capa ---------- */
+
+.bk-cover {
+  justify-content: space-between;
+  padding: 28mm 25mm 22mm;
+}
+
+.bk-cover__top {
+  border-top: 1.2mm solid var(--bk-green, #065f46);
+  padding-top: 6mm;
+}
+
+.bk-cover__brand {
+  font-size: 26pt;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-cover__middle h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 34pt;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #14231c;
+}
+
+.bk-cover__rule {
+  width: 22mm;
+  height: 0.8mm;
+  margin: 8mm 0;
+  background: var(--bk-green, #065f46);
+}
+
+.bk-cover__middle p {
+  font-size: 12pt;
+  color: var(--bk-muted, #5b6670);
+}
+
+.bk-cover__bottom {
+  border-top: 0.2mm solid var(--bk-rule, #cfd6d2);
+  padding-top: 4mm;
+  font-size: 8.5pt;
+  line-height: 1.5;
+  color: var(--bk-muted, #5b6670);
+}
+
+/* ---------- Identificação ---------- */
+
+.bk-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 0.2mm solid var(--bk-ink, #1f2933);
+  border-left: 0.2mm solid var(--bk-ink, #1f2933);
+}
+
+.bk-field {
+  min-height: 15mm;
+  padding: 2mm 3mm;
+  border-right: 0.2mm solid var(--bk-ink, #1f2933);
+  border-bottom: 0.2mm solid var(--bk-ink, #1f2933);
+}
+
+.bk-field--wide {
+  grid-column: 1 / -1;
+}
+
+.bk-field dt {
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--bk-muted, #5b6670);
+}
+
+.bk-field dd {
+  margin-top: 1mm;
+  font-size: 11pt;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bk-subtitle {
+  margin: 9mm 0 3mm;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-note {
+  margin-top: 6mm;
+  font-size: 8.5pt;
+  color: var(--bk-muted, #5b6670);
+}
+
+/* ---------- Histórico ---------- */
+
+.bk-grid {
+  display: grid;
+  grid-template-columns: 7mm 20mm minmax(0, 1fr) 22mm 27mm 37mm;
+  column-gap: 2mm;
+}
+
+.bk-head {
+  height: 7mm;
+  align-items: center;
+  border-bottom: 0.3mm solid var(--bk-ink, #1f2933);
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: var(--bk-muted, #5b6670);
+}
+
+.bk-records {
+  list-style: none;
+}
+
+.bk-record {
+  border-bottom: 0.2mm solid var(--bk-rule, #cfd6d2);
+  font-size: 8.5pt;
+}
+
+.bk-record__section {
+  padding: 4mm 0 1.5mm;
+  font-size: 9pt;
+  font-weight: 700;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-record__row {
+  align-items: start;
+  padding: 2.2mm 0;
+}
+
+.bk-record__row > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bk-record strong {
+  font-weight: 600;
+}
+
+.bk-record small {
+  display: block;
+  font-size: 7.5pt;
+  color: var(--bk-muted, #5b6670);
+}
+
+.bk-record__extra {
+  padding: 0 0 2.2mm 31mm;
+  font-size: 8pt;
+  color: #374151;
+  overflow-wrap: anywhere;
+}
+
+.bk-record--selectable {
+  cursor: pointer;
+}
+
+.bk-record--selectable:hover {
+  background: #f4f7f5;
+}
+
+.bk-record--selected,
+.bk-record--selected:hover {
+  background: var(--bk-green-soft, #ecf5f1);
+  box-shadow: inset 1mm 0 0 var(--bk-green, #065f46);
+}
+
+.bk-empty {
+  padding: 12mm 0;
+  text-align: center;
+  font-size: 10pt;
+  color: var(--bk-muted, #5b6670);
+}
+
+/* ---------- Folha de rosto (última folha): texto justificado ---------- */
+
+.bk-colophon__title {
+  text-align: center;
+  margin-bottom: 10mm;
+}
+
+.bk-colophon__title p {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--bk-green, #065f46);
+}
+
+.bk-colophon__title h2 {
+  margin-top: 2mm;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18pt;
+  font-weight: 700;
+  color: #14231c;
+}
+
+.bk-colophon__text {
+  padding: 0 6mm;
+  font-size: 11pt;
+  line-height: 1.7;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.bk-colophon__text p + p {
+  margin-top: 5mm;
+}
+
+.bk-colophon__text p {
+  text-indent: 10mm;
+}
+
+/* ---------- Impressão ---------- */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    filter: none !important;
+  }
+
+  /* Nada da interface do sistema vai para o papel. */
+  body > *:not(.bk-overlay) {
+    display: none !important;
+  }
+
+  .bk-overlay {
+    position: static;
+    display: block;
+    background: #fff;
+  }
+
+  .bk-toolbar,
+  .bk-measure {
+    display: none !important;
+  }
+
+  .bk-stage {
+    overflow: visible;
+    padding: 0;
+  }
+
+  .bk-pages {
+    display: block;
+  }
+
+  .bk-sheet,
+  .bk-sheet__inner {
+    width: 210mm !important;
+    height: 296.5mm !important;
+    transform: none !important;
+  }
+
+  .bk-sheet {
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+  }
+
+  .bk-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .bk-page {
+    border: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .bk-record--selected,
+  .bk-record--selectable:hover {
+    background: none;
+    box-shadow: none;
+  }
+}

@@ -129,13 +129,13 @@ function ProfissionalForm({
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField
-          label="First name"
+          label="Nome"
           value={formData.firstName}
           onChange={(e) => updateField('firstName', e.target.value)}
           error={errors.firstName}
         />
         <FormField
-          label="Last name"
+          label="Sobrenome"
           value={formData.lastName}
           onChange={(e) => updateField('lastName', e.target.value)}
           error={errors.lastName}

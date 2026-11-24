@@ -4,6 +4,7 @@ import UBSForm from './UBSForm';
 import SuccessScreen from './SuccessScreen';
 import { updateUBS } from '../../../services/ubsService';
 import type { UBS, UBSFormData } from '../../../types/ubs';
+import { readPersonNames } from '../../../utils/personName';
 
 type Step = 'form' | 'success';
 
@@ -33,7 +34,18 @@ function ubsToFormData(ubs: UBS): UBSFormData {
     email: ubs.email,
     status: ubs.status,
     administratorsCount: ubs.administrators.length,
-    administrators: ubs.administrators.map((admin) => ({ ...admin })),
+    administrators: ubs.administrators.map((admin) => {
+      const names = readPersonNames(admin);
+      return {
+        firstName: names.firstName,
+        lastName: names.lastName,
+        cpf: admin.cpf,
+        email: admin.email,
+        phone: admin.phone,
+        temporaryPassword: admin.temporaryPassword,
+        login: admin.login,
+      };
+    }),
   };
 }
 

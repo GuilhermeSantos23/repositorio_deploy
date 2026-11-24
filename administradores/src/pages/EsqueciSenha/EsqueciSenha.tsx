@@ -1,19 +1,20 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MailOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { MailOutlined } from '@ant-design/icons';
 import AuthLayout from '../../layouts/AuthLayout/AuthLayout';
 import FormField from '../../components/form/FormField/FormField';
 import ValidationOverlay from '../../components/common/ValidationOverlay/ValidationOverlay';
 import { maskCPF, maskNumeric } from '../../utils/masks';
 
-type Etapa = 'identificador' | 'codigo' | 'novaSenha' | 'sucesso';
+type Etapa = 'identificador' | 'codigo';
 type ValidationStep = 'idle' | 'validating' | 'success';
 
-// Como ainda não existe backend, este fluxo não valida CPF/código/senha de
+// Como ainda não existe backend, este fluxo não valida CPF/código de
 // verdade: qualquer preenchimento válido (campos não vazios) é aceito
 // ("tudo dá certo"). O backend futuramente será responsável por localizar
-// o administrador pelo CPF, gerar/enviar/validar o código por e-mail e
-// efetivar a troca de senha.
+// o administrador pelo CPF e gerar/enviar/validar o código por e-mail.
+// Depois do código validado, o usuário entra no sistema. Não há tela de
+// criar uma nova senha.
 function EsqueciSenha() {
   const [etapa, setEtapa] = useState<Etapa>('identificador');
   const [validationStep, setValidationStep] = useState<ValidationStep>('idle');
@@ -24,10 +25,6 @@ function EsqueciSenha() {
   const [codigo, setCodigo] = useState('');
   const [codigoErro, setCodigoErro] = useState('');
 
-  const [novaSenha, setNovaSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [senhaErro, setSenhaErro] = useState('');
-
   const navigate = useNavigate();
 
   function avancarComValidacao(proximaEtapa: Etapa) {
@@ -37,6 +34,16 @@ function EsqueciSenha() {
       window.setTimeout(() => {
         setValidationStep('idle');
         setEtapa(proximaEtapa);
+      }, 800);
+    }, 900);
+  }
+
+  function entrarNoSistema() {
+    setValidationStep('validating');
+    window.setTimeout(() => {
+      setValidationStep('success');
+      window.setTimeout(() => {
+        navigate('/dashboard', { replace: true });
       }, 800);
     }, 900);
   }
@@ -62,45 +69,17 @@ function EsqueciSenha() {
     }
 
     setCodigoErro('');
-    avancarComValidacao('novaSenha');
+    entrarNoSistema();
   }
-
-  function handleSubmitNovaSenha(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!novaSenha.trim() || !confirmarSenha.trim()) {
-      setSenhaErro('Preencha a nova senha e a confirmação.');
-      return;
-    }
-
-    if (novaSenha !== confirmarSenha) {
-      setSenhaErro('As senhas não coincidem.');
-      return;
-    }
-
-    setSenhaErro('');
-    avancarComValidacao('sucesso');
-  }
-
-  useEffect(() => {
-    if (etapa !== 'sucesso') return;
-
-    const timer = setTimeout(() => navigate('/login'), 2000);
-    return () => clearTimeout(timer);
-  }, [etapa, navigate]);
 
   const validatingTextoPorEtapa: Record<Etapa, string> = {
     identificador: 'Localizando cadastro...',
     codigo: 'Validando código...',
-    novaSenha: 'Salvando nova senha...',
-    sucesso: '',
   };
 
   const successTextoPorEtapa: Record<Etapa, string> = {
     identificador: 'Código enviado por e-mail',
     codigo: 'Código correto',
-    novaSenha: 'Senha alterada',
-    sucesso: '',
   };
 
   return (
@@ -187,65 +166,6 @@ function EsqueciSenha() {
               </Link>
             </form>
           </>
-        )}
-
-        {etapa === 'novaSenha' && (
-          <>
-            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Criar nova senha</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Defina uma nova senha de acesso para a sua conta.
-            </p>
-
-            <form
-              onSubmit={handleSubmitNovaSenha}
-              className="mt-6 flex flex-col gap-4"
-              noValidate
-            >
-              <FormField
-                label="Nova senha"
-                type="password"
-                value={novaSenha}
-                onChange={(event) => setNovaSenha(event.target.value)}
-              />
-
-              <FormField
-                label="Confirmar nova senha"
-                type="password"
-                value={confirmarSenha}
-                onChange={(event) => setConfirmarSenha(event.target.value)}
-                error={senhaErro}
-              />
-
-              <button
-                type="submit"
-                className="mt-2 w-full rounded-lg bg-emerald-300 py-3 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-              >
-                Salvar nova senha
-              </button>
-            </form>
-          </>
-        )}
-
-        {etapa === 'sucesso' && (
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
-              <CheckCircleOutlined />
-            </span>
-
-            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-              Senha alterada com sucesso
-            </h2>
-            <p className="text-sm text-gray-500">
-              Você já pode entrar novamente com a sua nova senha.
-            </p>
-
-            <Link
-              to="/login"
-              className="mt-2 w-full rounded-lg bg-emerald-300 py-3 text-center text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-400"
-            >
-              Voltar para o login
-            </Link>
-          </div>
         )}
 
         {validationStep !== 'idle' && (

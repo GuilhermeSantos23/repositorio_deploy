@@ -157,7 +157,8 @@ function ClinicForm({
     const administratorErrors: AdministratorFieldErrors[] = formData.administrators.map(
       (admin) => {
         const adminErrors: AdministratorFieldErrors = {};
-        if (!admin.name.trim()) adminErrors.name = 'Nome é obrigatório.';
+        if (!admin.firstName.trim()) adminErrors.firstName = 'Nome é obrigatório.';
+        if (!admin.lastName.trim()) adminErrors.lastName = 'Sobrenome é obrigatório.';
         if (!admin.cpf.trim()) adminErrors.cpf = 'CPF é obrigatório.';
         if (!admin.email.trim()) {
           adminErrors.email = 'E-mail é obrigatório.';
@@ -195,6 +196,7 @@ function ClinicForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
             label="Nome da clínica"
+            className="sm:col-span-2"
             value={formData.name}
             onChange={(e) => updateField('name', e.target.value)}
             error={errors.name}
@@ -221,17 +223,16 @@ function ClinicForm({
             )}
           </div>
           <FormField
+            label="Logradouro"
+            value={formData.street}
+            onChange={(e) => updateField('street', e.target.value)}
+            error={errors.street}
+          />
+          <FormField
             label="Número"
             value={formData.number}
             onChange={(e) => updateField('number', e.target.value)}
             error={errors.number}
-          />
-          <FormField
-            label="Logradouro"
-            className="sm:col-span-2"
-            value={formData.street}
-            onChange={(e) => updateField('street', e.target.value)}
-            error={errors.street}
           />
           <FormField
             label="Cidade"

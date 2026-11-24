@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../../layouts/AuthLayout/AuthLayout';
 import FormField from '../../components/form/FormField/FormField';
 import ValidationOverlay from '../../components/common/ValidationOverlay/ValidationOverlay';
-import { maskCPF } from '../../utils/masks';
+import { maskCPF, maskNumeric } from '../../utils/masks';
 
 interface LoginErrors {
   cpf?: string;
   senha?: string;
+  codigoUnidade?: string;
 }
 
 type ValidationStep = 'idle' | 'validating' | 'success';
@@ -15,6 +16,7 @@ type ValidationStep = 'idle' | 'validating' | 'success';
 function Login() {
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
+  const [codigoUnidade, setCodigoUnidade] = useState('');
   const [errors, setErrors] = useState<LoginErrors>({});
   const [validationStep, setValidationStep] = useState<ValidationStep>('idle');
 
@@ -26,6 +28,9 @@ function Login() {
     const novosErros: LoginErrors = {};
     if (!cpf.trim()) novosErros.cpf = 'CPF é obrigatório.';
     if (!senha.trim()) novosErros.senha = 'Senha é obrigatória.';
+    if (!codigoUnidade.trim()) {
+      novosErros.codigoUnidade = 'Código da unidade é obrigatório.';
+    }
 
     setErrors(novosErros);
 
@@ -77,6 +82,17 @@ function Login() {
             value={senha}
             onChange={(event) => setSenha(event.target.value)}
             error={errors.senha}
+          />
+
+          <FormField
+            label="Código da unidade"
+            type="text"
+            inputMode="numeric"
+            maxLength={8}
+            placeholder="12345678"
+            value={codigoUnidade}
+            onChange={(event) => setCodigoUnidade(maskNumeric(event.target.value, 8))}
+            error={errors.codigoUnidade}
           />
 
           <Link to="/esqueci-senha" className="text-sm text-gray-500 hover:underline">

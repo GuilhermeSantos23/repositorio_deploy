@@ -69,3 +69,14 @@ export interface GrupoViajante {
   vaccines: VacinaViajante[];
   source: string;
 }
+
+// Uma vacina prevista para o cidadão, usada na tela de Histórico Vacinal.
+// - dataPrevista: início da faixa em que a vacina deve ser tomada.
+// - dataLimite: até quando ela ainda é considerada dentro do prazo
+//   (depois disso fica "em atraso", mas ainda pode ser tomada).
+export interface VacinaPrevista {
+  id: string;
+  nome: string;
+  dataPrevista: Date;
+  dataLimite: Date;
+}

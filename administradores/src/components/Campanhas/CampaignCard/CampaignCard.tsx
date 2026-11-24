@@ -33,6 +33,15 @@ function CampaignCard({ campaign, onEdit }: CampaignCardProps) {
 
       <p className="mt-1 line-clamp-2 text-sm text-gray-500">{campaign.description}</p>
 
+      <p className="mt-2 text-sm text-gray-700">
+        Doença: {campaign.disease || 'Não informada'}
+      </p>
+      {campaign.targetAudience && (
+        <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+          Público-alvo: {campaign.targetAudience}
+        </p>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
           <CalendarOutlined className="text-gray-400" />

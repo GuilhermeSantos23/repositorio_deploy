@@ -2,12 +2,23 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../../layouts/AuthLayout/AuthLayout';
 import FormField from '../../components/form/FormField/FormField';
+import SelectField from '../../components/form/SelectField/SelectField';
 import ValidationOverlay from '../../components/common/ValidationOverlay/ValidationOverlay';
 import { maskCPF } from '../../utils/masks';
+
+// Código alfanumérico da Secretaria de Administrações Regionais.
+// O valor enviado na autenticação é o código (SAR + 2 dígitos); o rótulo
+// mostra também o nome da regional.
+const REGIONAL_CODE_OPTIONS = [
+  { value: 'SAR12', label: 'SAR12 (Pimentas)' },
+  { value: 'SAR06', label: 'SAR06 (Cantareira)' },
+  { value: 'SAR05', label: 'SAR05 (Centro)' },
+];
 
 interface LoginErrors {
   cpf?: string;
   senha?: string;
+  codigoRegional?: string;
 }
 
 type ValidationStep = 'idle' | 'validating' | 'success';
@@ -15,6 +26,7 @@ type ValidationStep = 'idle' | 'validating' | 'success';
 function Login() {
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
+  const [codigoRegional, setCodigoRegional] = useState('');
   const [errors, setErrors] = useState<LoginErrors>({});
   const [validationStep, setValidationStep] = useState<ValidationStep>('idle');
   const navigate = useNavigate();
@@ -25,6 +37,9 @@ function Login() {
     const novosErros: LoginErrors = {};
     if (!cpf.trim()) novosErros.cpf = 'CPF é obrigatório.';
     if (!senha.trim()) novosErros.senha = 'Senha é obrigatória.';
+    if (!codigoRegional.trim()) {
+      novosErros.codigoRegional = 'Código da regional é obrigatório.';
+    }
 
     setErrors(novosErros);
 
@@ -76,6 +91,17 @@ function Login() {
             value={senha}
             onChange={(event) => setSenha(event.target.value)}
             error={errors.senha}
+          />
+
+          <SelectField
+            label="Código da regional"
+            value={codigoRegional}
+            onChange={(event) => setCodigoRegional(event.target.value)}
+            error={errors.codigoRegional}
+            options={[
+              { value: '', label: 'Selecione a regional' },
+              ...REGIONAL_CODE_OPTIONS,
+            ]}
           />
 
           <Link to="/esqueci-senha" className="text-sm text-emerald-700 hover:underline">

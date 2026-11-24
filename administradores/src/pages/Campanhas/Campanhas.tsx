@@ -36,7 +36,11 @@ function Campanhas() {
   // de Estoque.
   const campanhasFiltradas = campanhas.filter((campanha) => {
     const termo = busca.trim().toLowerCase();
-    const combinaBusca = !termo || campanha.title.toLowerCase().includes(termo);
+    const combinaBusca =
+      !termo ||
+      campanha.title.toLowerCase().includes(termo) ||
+      campanha.disease.toLowerCase().includes(termo) ||
+      campanha.targetAudience.toLowerCase().includes(termo);
     const combinaStatus = statusFilter === 'todas' || campanha.status === statusFilter;
     return combinaBusca && combinaStatus;
   });

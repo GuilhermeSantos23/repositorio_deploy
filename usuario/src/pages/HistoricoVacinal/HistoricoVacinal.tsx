@@ -1,68 +1,70 @@
-interface VaccineItem {
-  name: string;
-  info: string;
-}
-
-interface VaccineSection {
-  title: string;
-  items: VaccineItem[];
-}
-
-const sections: VaccineSection[] = [
-  {
-    title: 'VACINAS PENDENTES',
-    items: [
-      { name: 'Influenza 2026', info: 'Campanha até fevereiro 2026' },
-      { name: 'Febre Amarela (reforço)', info: 'Campanha até abril 2026' },
-      { name: 'dT (reforço a cada 10 anos)', info: 'Vence em 2028' },
-    ],
-  },
-  {
-    title: 'VACINAS EM ATRASO',
-    items: [
-      { name: 'Tríplice Viral (reforço)', info: 'Atrasada em 4 anos' },
-      { name: 'Hepatite B (3ª dose)', info: 'Atrasada em 2 anos' },
-    ],
-  },
-  {
-    title: 'PRÓXIMAS VACINAS',
-    items: [
-      { name: 'COVID-19 (reforço)', info: 'Campanha em março 2027' },
-      { name: 'HPV (reforço)', info: 'Prevista para 2030' },
-    ],
-  },
-];
+import { useMemo } from 'react';
+import CartaoVacinas from '../../components/Historico/CartaoVacinas';
+import { criarVacinasPrevistasMock } from '../../data/historicoVacinalMock';
+import { classificarVacinas, textoAtraso } from '../../utils/prazosVacinais';
+import { formatMonthYear } from '../../utils/formatDate';
+import { useUser } from '../../hooks/useUser';
 
 function HistoricoVacinal() {
+  const { userName } = useUser();
+
+  // As vacinas vêm de dados simulados (ver data/historicoVacinalMock.ts).
+  const { proximas, pendentes, atrasadas } = useMemo(() => {
+    const hoje = new Date();
+    const grupos = classificarVacinas(criarVacinasPrevistasMock(hoje), hoje);
+
+    return {
+      // Só as 3 próximas vacinas.
+      proximas: grupos.proximas.slice(0, 3).map((v) => ({
+        id: v.id,
+        nome: v.nome,
+        info: `Prevista para ${formatMonthYear(v.dataPrevista)}`,
+      })),
+      pendentes: grupos.pendentes.map((v) => ({
+        id: v.id,
+        nome: v.nome,
+        info: `Campanha até ${formatMonthYear(v.dataLimite)}`,
+      })),
+      // Já vêm do maior atraso para o menor.
+      atrasadas: grupos.atrasadas.map((v) => ({
+        id: v.id,
+        nome: v.nome,
+        info: textoAtraso(v.dataLimite, hoje),
+      })),
+    };
+  }, []);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800">Olá, João!</h1>
+      <h1 className="text-2xl font-bold text-gray-800">Olá, {userName}!</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Aqui está suas vacinas pendentes , em atraso e suas próximas vacinas
+        Aqui estão suas próximas vacinas, as pendentes e as que estão em atraso
       </p>
 
       <div className="mt-6 flex flex-col gap-5">
-        {sections.map((section) => (
-          <div
-            key={section.title}
-            className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm"
-          >
-            <h2 className="text-sm font-bold tracking-wide text-gray-800">
-              {section.title}
-            </h2>
+        <CartaoVacinas
+          titulo="PRÓXIMAS VACINAS"
+          itens={proximas}
+          textoVazio="Nenhuma vacina prevista por enquanto."
+          atrasoAnimacao={0}
+        />
 
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {section.items.map((item) => (
-                <div key={item.name}>
-                  <p className="text-sm font-semibold text-red-600">
-                    {item.name}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">{item.info}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+        <CartaoVacinas
+          titulo="VACINAS PENDENTES"
+          itens={pendentes}
+          comVerMais
+          textoVazio="Você não tem vacinas pendentes."
+          atrasoAnimacao={100}
+        />
+
+        <CartaoVacinas
+          titulo="VACINAS EM ATRASO"
+          itens={atrasadas}
+          variante="atraso"
+          comVerMais
+          textoVazio="Você não tem vacinas em atraso."
+          atrasoAnimacao={200}
+        />
       </div>
     </div>
   );

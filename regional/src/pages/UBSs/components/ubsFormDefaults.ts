@@ -3,7 +3,8 @@ import { generateTemporaryPassword } from '../../../utils/password';
 
 export function buildEmptyAdministrator(): UBSAdministratorFormData {
   return {
-    name: '',
+    firstName: '',
+    lastName: '',
     cpf: '',
     email: '',
     phone: '',

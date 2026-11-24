@@ -2,8 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Drawer } from 'antd';
 import {
   CloseOutlined,
-  CompassOutlined,
-  ToolOutlined,
   SettingOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -15,8 +13,7 @@ interface HamburgerMenuProps {
 }
 
 const menuItems = [
-  { label: 'Missão', icon: <CompassOutlined />, to: '/missao' },
-  { label: 'Serviços', icon: <ToolOutlined />, to: '/servicos' },
+
   { label: 'Configurações', icon: <SettingOutlined />, to: '/configuracoes' },
 ];
 

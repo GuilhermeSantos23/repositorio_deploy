@@ -4,7 +4,8 @@ import { maskCPF, maskPhone } from '../../../utils/masks';
 import type { ClinicAdministratorFormData } from '../../../types/clinic';
 
 export interface AdministratorFieldErrors {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   cpf?: string;
   email?: string;
   phone?: string;
@@ -21,7 +22,7 @@ interface AdministratorFieldsGroupProps {
 }
 
 /**
- * Renderiza os campos de UM administrador (Nome, CPF, E-mail, Telefone,
+ * Renderiza os campos de UM administrador (Nome, Sobrenome, CPF, E-mail, Telefone,
  * Senha provisória, Login). É repetido dinamicamente conforme a
  * "Quantidade de administradores" escolhida no formulário — nunca
  * duplicado manualmente.
@@ -45,9 +46,15 @@ function AdministratorFieldsGroup({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField
           label="Nome"
-          value={data.name}
-          onChange={(e) => onChange('name', e.target.value)}
-          error={errors.name}
+          value={data.firstName}
+          onChange={(e) => onChange('firstName', e.target.value)}
+          error={errors.firstName}
+        />
+        <FormField
+          label="Sobrenome"
+          value={data.lastName}
+          onChange={(e) => onChange('lastName', e.target.value)}
+          error={errors.lastName}
         />
         <FormField
           label="CPF"

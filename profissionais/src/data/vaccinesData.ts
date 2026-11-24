@@ -248,6 +248,7 @@ export const RECORTES: Recorte[] = [
             name: 'Covid-19 (reforço)',
             network: 'publica',
             doses: [{ id: 'semestral', label: 'Reforço semestral (60+)' }],
+            minAge: 60,
           },
         ],
       },

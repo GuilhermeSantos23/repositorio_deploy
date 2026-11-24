@@ -58,3 +58,19 @@ export function getRecorteByAge(age: number): Exclude<RecorteId, 'anual'> {
   if (age < 60) return 'adulto';
   return 'idoso';
 }
+
+// Idade mínima para cada recorte. Um cidadão pode ter vacinas pendentes de
+// recortes anteriores ao seu (ex.: um adulto sem a BCG da infância), mas não
+// de recortes de uma faixa etária que ele ainda não alcançou.
+const MIN_AGE_BY_RECORTE: Record<RecorteId, number> = {
+  crianca: 0,
+  adolescente: 10,
+  jovem: 20,
+  adulto: 25,
+  idoso: 60,
+  anual: 0,
+};
+
+export function isRecorteAvailableForAge(recorteId: RecorteId, age: number): boolean {
+  return age >= MIN_AGE_BY_RECORTE[recorteId];
+}

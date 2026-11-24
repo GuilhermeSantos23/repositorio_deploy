@@ -21,3 +21,13 @@ export function maskTelefone(value: string): string {
 export function maskNumeric(value: string, maxLength: number): string {
   return value.replace(/\D/g, '').slice(0, maxLength);
 }
+
+/** Cartão Nacional de Saúde: 15 dígitos no formato 000 0000 0000 0000. */
+export function maskSus(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 15);
+
+  return digits
+    .replace(/(\d{3})(\d)/, '$1 $2')
+    .replace(/(\d{3}) (\d{4})(\d)/, '$1 $2 $3')
+    .replace(/(\d{3}) (\d{4}) (\d{4})(\d)/, '$1 $2 $3 $4');
+}

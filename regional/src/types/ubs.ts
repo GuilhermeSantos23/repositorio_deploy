@@ -14,7 +14,10 @@ export type UBSStatus =
 
 export interface UBSAdministrator {
   id: string;
+  /** Nome completo. Mantido para listagens e registros que só tinham um campo. */
   name: string;
+  firstName?: string;
+  lastName?: string;
   cpf: string;
   email: string;
   phone: string;
@@ -50,7 +53,8 @@ export interface UBS {
 
 /** Dados do administrador preenchidos no formulário (sem id ainda). */
 export interface UBSAdministratorFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   cpf: string;
   email: string;
   phone: string;

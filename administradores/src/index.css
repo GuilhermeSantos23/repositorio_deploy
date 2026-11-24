@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+/* Permite usar classes "dark:" controladas manualmente por uma classe
+   ".dark" no <html> (ver PreferencesTab em Settings), em vez de só pelo
+   tema do sistema operacional. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @keyframes draw-circle {
   to {
     stroke-dashoffset: 0;
@@ -25,4 +30,48 @@ body,
 
 body {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Tema escuro global: sobrescreve as classes utilitárias já usadas nos
+   componentes, sem precisar adicionar "dark:" em cada um deles.
+   Header e BottomNavigation (e tudo dentro deles) ficam de fora de
+   propósito, para manter a identidade visual da navegação intacta. */
+.dark body {
+  background-color: #111827;
+}
+
+.dark .bg-white:not(header):not(header *):not(nav):not(nav *) {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-50:not(header):not(header *):not(nav):not(nav *) {
+  background-color: #111827;
+}
+
+.dark .text-gray-900:not(header):not(header *):not(nav):not(nav *),
+.dark .text-gray-800:not(header):not(header *):not(nav):not(nav *),
+.dark .text-gray-700:not(header):not(header *):not(nav):not(nav *),
+.dark .text-gray-600:not(header):not(header *):not(nav):not(nav *),
+.dark .text-gray-500:not(header):not(header *):not(nav):not(nav *),
+.dark .text-gray-400:not(header):not(header *):not(nav):not(nav *) {
+  color: #8fa396; /* verde acinzentado */
+}
+
+.dark .border-gray-100:not(header):not(header *):not(nav):not(nav *),
+.dark .border-gray-200:not(header):not(header *):not(nav):not(nav *) {
+  border-color: #374151;
+}
+
+/* Abas de Configurações (antd Tabs) — o antd não usa as classes do
+   Tailwind acima, então precisa de sobrescrita própria. */
+.dark .ant-tabs-tab .ant-tabs-tab-btn {
+  color: #8fa396;
+}
+
+.dark .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #ffffff !important;
+}
+
+.dark .ant-tabs-ink-bar {
+  background-color: #8fa396;
 }

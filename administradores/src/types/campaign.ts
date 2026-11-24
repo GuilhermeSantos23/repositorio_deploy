@@ -21,6 +21,13 @@ export interface Campaign {
   publishedAt: string;
   /** Data de encerramento no formato ISO (yyyy-mm-dd). */
   endDate: string;
+  /**
+   * Doença combatida. Vem do catálogo de vacinas já cadastrado no estoque
+   * (não há um cadastro separado de doenças). Vazio em registros antigos.
+   */
+  disease: string;
+  /** Descrição livre do público que a campanha pretende atingir. */
+  targetAudience: string;
   status: CampaignStatus;
 }
 
@@ -37,4 +44,6 @@ export interface CampaignFormData {
   description: string;
   publishedAt: string;
   endDate: string;
+  disease: string;
+  targetAudience: string;
 }

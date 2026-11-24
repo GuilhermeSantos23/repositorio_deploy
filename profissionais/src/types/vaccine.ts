@@ -19,6 +19,8 @@ export interface VaccineOption {
   network: NetworkType;
   doses: DoseOption[];
   note?: string;
+  /** Idade mínima (anos) para a vacina ser prevista. */
+  minAge?: number;
 }
 
 export interface Momento {

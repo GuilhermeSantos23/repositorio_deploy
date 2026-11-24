@@ -111,7 +111,8 @@ function UBSForm({ region, initialData, submitLabel, onSubmit, onCancel }: UBSFo
     const administratorErrors: AdministratorFieldErrors[] = formData.administrators.map(
       (admin) => {
         const adminErrors: AdministratorFieldErrors = {};
-        if (!admin.name.trim()) adminErrors.name = 'Nome é obrigatório.';
+        if (!admin.firstName.trim()) adminErrors.firstName = 'Nome é obrigatório.';
+        if (!admin.lastName.trim()) adminErrors.lastName = 'Sobrenome é obrigatório.';
         if (!admin.cpf.trim()) adminErrors.cpf = 'CPF é obrigatório.';
         if (!admin.email.trim()) {
           adminErrors.email = 'E-mail é obrigatório.';

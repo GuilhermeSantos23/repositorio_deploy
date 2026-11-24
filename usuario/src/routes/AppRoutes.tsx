@@ -8,15 +8,15 @@ import {
 import MainLayout from '../layouts/MainLayout/MainLayout';
 import Login from '../pages/Login/Login';
 import Cadastro from '../pages/Cadastro/Cadastro';
+import RecuperarAcesso from '../pages/RecuperarAcesso/RecuperarAcesso';
+import DocumentoLegal from '../pages/Legal/DocumentoLegal';
 import Home from '../pages/Home/Home';
 import UnidadesProximas from '../pages/UnidadesProximas/UnidadesProximas';
 import Settings from '../pages/Settings/Settings';
 import Calendario from '../pages/Calendario/Calendario';
-import Servicos from '../pages/Servicos/Servicos';
 import CadernetaVacinacao from '../pages/CadernetaVacinacao/CadernetaVacinacao';
 import HistoricoVacinal from '../pages/HistoricoVacinal/HistoricoVacinal';
 import InformacoesVacinais from '../pages/Informacoes/InformacoesVacinais';
-import Missao from '../pages/Missao/Missao';
 import UserProvider from '../contexts/UserProvider';
 import AlertProvider from '../contexts/AlertProvider';
 import { useUser } from '../hooks/useUser';
@@ -55,6 +55,15 @@ function AppRoutes() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
+            <Route
+              path="/termos-de-uso"
+              element={<DocumentoLegal tipo="termos" />}
+            />
+            <Route
+              path="/politica-de-privacidade"
+              element={<DocumentoLegal tipo="privacidade" />}
+            />
 
             <Route element={<RotaProtegida />}>
               <Route path="/home" element={<Home />} />
@@ -64,7 +73,6 @@ function AppRoutes() {
               />
               <Route path="/configuracoes" element={<Settings />} />
               <Route path="/calendario" element={<Calendario />} />
-              <Route path="/servicos" element={<Servicos />} />
               <Route
                 path="/caderneta-vacinacao"
                 element={<CadernetaVacinacao />}
@@ -77,7 +85,6 @@ function AppRoutes() {
                 path="/informacoes-vacinais"
                 element={<InformacoesVacinais />}
               />
-              <Route path="/missao" element={<Missao />} />
             </Route>
 
             <Route path="/" element={<Navigate to="/login" replace />} />

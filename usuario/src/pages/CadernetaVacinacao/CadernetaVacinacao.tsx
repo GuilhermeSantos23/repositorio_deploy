@@ -1,56 +1,20 @@
 import { useState } from 'react';
 import { UserOutlined } from '@ant-design/icons';
+import { CITIZEN, VACCINATION_RECORDS } from '../../data/cadernetaMock';
+import { formatIsoDate } from '../../utils/formatDate';
+import VaccinationBookletView from '../../components/booklet/VaccinationBookletView';
+import type { VaccinationRecord } from '../../types/caderneta';
 
-type Tab = 'capa' | 'identificacao' | 'vacinas';
+type Tab = 'capa' | 'identificacao' | 'vacinas' | 'caderneta';
 
-interface Citizen {
-  name: string;
-  cpf: string;
-  susCard: string;
-  birthDate: string;
-  age: string;
-  priorityGroup: string;
-}
-
-interface Vaccine {
-  name: string;
-  date: string;
-  batch: string;
-  location: string;
-  professional: string;
-}
-
-// Dados estáticos apenas para reproduzir o protótipo do Figma.
-const citizen: Citizen = {
-  name: 'Carla Ribeiro',
-  cpf: '123.456.789-00',
-  susCard: '700 9674 9916 0003',
-  birthDate: '14/04/1992',
-  age: '34 anos',
-  priorityGroup: 'Adulto',
-};
-
-const vaccines: Vaccine[] = [
-  {
-    name: 'BCG (Dose única)',
-    date: '19/04/1992',
-    batch: 'BC39292',
-    location: 'Maternidade Municipal',
-    professional: 'Ana Costa',
-  },
-  {
-    name: 'Hepatite B (3º Dose)',
-    date: '14/10/1992',
-    batch: 'HEP4421',
-    location: 'UBS Vila Nova',
-    professional: 'Tec. Pedro Lima',
-  },
-];
+// Dados simulados em data/cadernetaMock.ts (trocar pela API quando existir).
+const citizen = CITIZEN;
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'capa', label: 'Capa' },
   { id: 'identificacao', label: 'Identificação' },
   { id: 'vacinas', label: 'Vacinas aplicadas' },
+  { id: 'caderneta', label: 'Caderneta' },
 ];
 
 interface TabButtonProps {
@@ -129,68 +93,126 @@ function IdentificacaoContent() {
   );
 }
 
-interface VaccineCardProps {
-  vaccine: Vaccine;
-}
-
-function VaccineCard({ vaccine }: VaccineCardProps) {
+function VaccineCard({ record }: { record: VaccinationRecord }) {
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-dashed border-emerald-200 p-4 sm:grid-cols-2 sm:gap-4">
+    <li className="grid grid-cols-1 gap-3 rounded-xl border border-dashed border-emerald-200 p-4 sm:grid-cols-2 sm:gap-4">
       <div>
-        <p className="text-sm font-semibold text-gray-900">Vacina</p>
-        <p className="text-sm text-gray-900">{vaccine.name}</p>
-        <p className="mt-1 text-sm text-gray-500">Data: {vaccine.date}</p>
-        <p className="text-sm text-gray-500">Lote: {vaccine.batch}</p>
+        <p className="text-sm font-semibold text-gray-900">{record.vacinaNome}</p>
+        <p className="text-sm text-gray-900">{record.doseLabel}</p>
+        <p className="mt-1 text-sm text-gray-500">Data: {formatIsoDate(record.data)}</p>
+        <p className="text-sm text-gray-500">Lote: {record.lote || 'Não informado'}</p>
       </div>
 
       <div className="sm:pt-6">
-        <p className="text-sm text-gray-500">Local: {vaccine.location}</p>
+        <p className="text-sm text-gray-500">Local: {record.unidade || 'Não informado'}</p>
         <p className="text-sm text-gray-500">
-          Profissional: {vaccine.professional}
+          Profissional: {record.profissional || 'Não informado'}
         </p>
       </div>
-    </div>
+    </li>
   );
 }
 
+// Todas as vacinas aplicadas, da mais recente para a mais antiga. Doses
+// apenas previstas ou não tomadas não aparecem aqui.
 function VacinasContent() {
-  const handlePrint = () => {
-    window.print();
-  };
+  const applied = VACCINATION_RECORDS.filter((record) => record.status === 'aplicada').sort(
+    (a, b) => (b.data ?? '').localeCompare(a.data ?? ''),
+  );
 
   return (
     <div className="flex items-stretch gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:gap-6 sm:p-6">
       <div className="my-1 w-1.5 shrink-0 rounded-full bg-emerald-200" />
 
       <div className="flex-1">
-        <div className="flex flex-col gap-4">
-          {vaccines.map((vaccine) => (
-            <VaccineCard key={vaccine.name} vaccine={vaccine} />
-          ))}
-        </div>
+        <p className="mb-4 text-sm font-semibold text-gray-900">
+          {applied.length === 1 ? '1 vacina aplicada' : `${applied.length} vacinas aplicadas`}
+        </p>
 
-        <div className="mt-6 flex flex-wrap items-center gap-6 border-t border-gray-100 pt-4">
+        {applied.length === 0 ? (
+          <p className="text-sm text-gray-500">Você ainda não tem vacinas aplicadas registradas.</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {applied.map((record) => (
+              <VaccineCard key={record.id} record={record} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type Viewer = 'closed' | 'view' | 'print';
+
+// Card da caderneta: o documento é o mesmo gerado pelo profissional.
+// Baixar PDF, Imprimir e QR code ficam abaixo do card.
+function CadernetaContent() {
+  const [viewer, setViewer] = useState<Viewer>('closed');
+  const [notice, setNotice] = useState('');
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-stretch gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:gap-6 sm:p-6">
+        <div className="my-1 w-1.5 shrink-0 rounded-full bg-emerald-200" />
+
+        <div className="flex flex-1 flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Caderneta</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Documento com sua identificação e o histórico de vacinas aplicadas.
+            </p>
+          </div>
+
           <button
             type="button"
-            className="text-sm font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-700"
+            onClick={() => { setNotice(''); setViewer('view'); }}
+            className="rounded-lg bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
           >
-            Baixar PDF
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="text-sm text-gray-600 hover:text-gray-800"
-          >
-            Imprimir
-          </button>
-          <button
-            type="button"
-            className="text-sm text-gray-600 hover:text-gray-800"
-          >
-            Compartilhar QRcode
+            Visualizar
           </button>
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-6 px-1">
+        <button
+          type="button"
+          onClick={() => {
+            setNotice('Na janela de impressão, escolha “Salvar como PDF” como destino.');
+            setViewer('print');
+          }}
+          className="text-sm font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-700"
+        >
+          Baixar PDF
+        </button>
+        <button
+          type="button"
+          onClick={() => { setNotice(''); setViewer('print'); }}
+          className="text-sm text-gray-600 hover:text-gray-800"
+        >
+          Imprimir
+        </button>
+        <button
+          type="button"
+          onClick={() => setNotice('O compartilhamento por QR code estará disponível quando a integração com o servidor estiver pronta.')}
+          className="text-sm text-gray-600 hover:text-gray-800"
+        >
+          Compartilhar QR code
+        </button>
+      </div>
+
+      {notice && <p className="px-1 text-sm text-gray-500" role="status">{notice}</p>}
+
+      {viewer !== 'closed' && (
+        <VaccinationBookletView
+          // key força uma nova montagem ao alternar entre visualizar e imprimir
+          key={viewer}
+          citizen={citizen}
+          records={VACCINATION_RECORDS}
+          autoPrint={viewer === 'print'}
+          onClose={() => setViewer('closed')}
+        />
+      )}
     </div>
   );
 }
@@ -214,6 +236,7 @@ function CadernetaVacinacao() {
       {activeTab === 'capa' && <CapaContent />}
       {activeTab === 'identificacao' && <IdentificacaoContent />}
       {activeTab === 'vacinas' && <VacinasContent />}
+      {activeTab === 'caderneta' && <CadernetaContent />}
     </div>
   );
 }

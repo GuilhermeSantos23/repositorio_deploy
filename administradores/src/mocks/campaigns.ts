@@ -10,6 +10,8 @@ export const campaignsMock: CampaignRecord[] = [
     description: 'Vacine-se e proteja você e sua família.',
     publishedAt: '2026-08-10',
     endDate: '2026-12-09',
+    disease: 'Influenza trivalente',
+    targetAudience: 'Pessoas a partir de 6 meses e grupos prioritários.',
   },
   {
     id: 2,
@@ -17,6 +19,8 @@ export const campaignsMock: CampaignRecord[] = [
     description: 'Atualize a caderneta de vacinação das crianças da região.',
     publishedAt: '2026-10-01',
     endDate: '2026-10-31',
+    disease: 'Penta (DTP + Hib + HB)',
+    targetAudience: 'Crianças com a caderneta de vacinação desatualizada.',
   },
   {
     id: 3,
@@ -24,5 +28,8 @@ export const campaignsMock: CampaignRecord[] = [
     description: 'Ação de conscientização e vacinação contra a dengue.',
     publishedAt: '2026-01-15',
     endDate: '2026-03-15',
+    // Dengue ainda não está no catálogo de vacinas do estoque.
+    disease: '',
+    targetAudience: 'Pessoas da região alcançadas pela ação de vacinação.',
   },
 ];

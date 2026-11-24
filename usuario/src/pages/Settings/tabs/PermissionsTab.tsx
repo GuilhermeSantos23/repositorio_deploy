@@ -18,13 +18,14 @@ const PERMISSIONS: PermissionItem[] = [
 
 type PermissionState = Record<string, boolean>;
 
+// Todas as permissões começam aceitas.
 const INITIAL_STATE: PermissionState = {
-  realtimeLocation: false,
-  shareData: false,
-  sensitiveData: false,
-  emailAlerts: false,
-  whatsappAlerts: false,
-  exportReport: false,
+  realtimeLocation: true,
+  shareData: true,
+  sensitiveData: true,
+  emailAlerts: true,
+  whatsappAlerts: true,
+  exportReport: true,
 };
 
 function PermissionsTab() {

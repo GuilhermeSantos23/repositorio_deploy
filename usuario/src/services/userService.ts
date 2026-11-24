@@ -1,3 +1,12 @@
+// =====================================================================
+// ATENÇÃO — SERVIÇO SIMULADO (MOCK)
+// Este arquivo NÃO usa a API do backend: cadastro e login funcionam
+// somente com dados salvos no localStorage do navegador. Todo o código
+// simulado do projeto está concentrado aqui. Quando os endpoints reais
+// de cadastro e login forem disponibilizados, este arquivo deve ser
+// substituído por chamadas à API (mantendo os mesmos nomes de função
+// para não alterar as telas). Ver pendências no relatório de entrega.
+// =====================================================================
 import type { AuthResult, RegisterData, User } from '../types/user';
 
 // Chave usada para guardar a lista de usuários cadastrados.
@@ -100,10 +109,17 @@ export async function cadastrarUsuario(
       return {
         success: false,
         message: 'Já existe uma conta cadastrada com este CPF.',
+        code: 'cpf_duplicado',
       };
     }
 
     const nomeCompleto = `${dadosCadastro.firstName} ${dadosCadastro.lastName}`.trim();
+
+    // Os campos birthDate, motherName, fatherName, cep e
+    // acknowledgedPrivacyPolicy são validados pela tela e já fazem parte
+    // de RegisterData, mas este serviço simulado não os guarda (para não
+    // gravar dados pessoais a mais no navegador). Eles devem ser enviados
+    // à API quando a integração real existir.
 
     const novoUsuario: User = {
       firstName: dadosCadastro.firstName,

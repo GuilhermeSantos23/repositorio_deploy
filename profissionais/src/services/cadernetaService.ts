@@ -1,26 +1,29 @@
 import type { Patient } from '../types/patient';
 import type { VaccinationRecord } from '../types/vaccinationRecord';
 import { getMockCadernetaRecords } from '../data/mockCaderneta';
+import { createId } from '../utils/id';
 
-const STORAGE_KEY = 'vacmais-profissionais-booklet-records';
-const REGISTERED_PATIENTS_KEY = 'vacmais-profissionais-registered-booklets';
+// Cada cidadão tem uma "fotografia" da caderneta salva localmente. Enquanto
+// ela não existir, valem os registros do mock do projeto.
+const STORAGE_KEY = 'vacmais-profissionais-booklets';
+
+type StoredBooklets = Record<string, VaccinationRecord[]>;
 
 /**
  * Boundary for caderneta operations.
- *
- * The initial records come from the project mock. New records are kept in
- * localStorage until the real caderneta API is integrated.
+ * Replace the bodies with the real caderneta API when it is integrated.
  */
 export async function getPatientBooklet(patient: Patient): Promise<VaccinationRecord[]> {
-  const mockRecords = getMockCadernetaRecords(patient.cpfFormatted);
-  const savedRecords = readSavedRecords().filter(
-    (record) => record.patientCpf === patient.cpfFormatted,
-  );
+  return readBooklet(patient.cpfFormatted);
+}
 
-  const recordsById = new Map(mockRecords.map((record) => [record.id, record]));
-  savedRecords.forEach((record) => recordsById.set(record.id, record));
-
-  return Array.from(recordsById.values());
+/** Cadastro ou alteração da caderneta: substitui todos os registros do cidadão. */
+export async function saveBooklet(
+  patientCpf: string,
+  records: VaccinationRecord[],
+): Promise<VaccinationRecord[]> {
+  writeBooklet(patientCpf, records);
+  return records;
 }
 
 export interface SaveBookletRecordInput {
@@ -28,75 +31,43 @@ export interface SaveBookletRecordInput {
   record: Omit<VaccinationRecord, 'id' | 'patientCpf'>;
 }
 
+/** Acrescenta uma aplicação à caderneta (usado pela tela de Aplicações). */
 export async function saveBookletRecord(
   input: SaveBookletRecordInput,
 ): Promise<VaccinationRecord> {
   const newRecord: VaccinationRecord = {
-    id: `mock-booklet-${Date.now()}`,
+    id: createId('mock-booklet'),
     patientCpf: input.patientCpf,
     ...input.record,
   };
 
-  const savedRecords = readSavedRecords();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...savedRecords, newRecord]));
-
-  const registeredPatients = readRegisteredPatients();
-  if (!registeredPatients.includes(input.patientCpf)) {
-    localStorage.setItem(
-      REGISTERED_PATIENTS_KEY,
-      JSON.stringify([...registeredPatients, input.patientCpf]),
-    );
-  }
-
+  writeBooklet(input.patientCpf, [...readBooklet(input.patientCpf), newRecord]);
   return newRecord;
 }
 
-
-export async function updateBookletRecord(
-  record: VaccinationRecord,
-): Promise<VaccinationRecord> {
-  const savedRecords = readSavedRecords();
-  const exists = savedRecords.some((savedRecord) => savedRecord.id === record.id);
-  const updatedRecords = exists
-    ? savedRecords.map((savedRecord) => (savedRecord.id === record.id ? record : savedRecord))
-    : [...savedRecords, record];
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRecords));
-
-  const registeredPatients = readRegisteredPatients();
-  if (!registeredPatients.includes(record.patientCpf)) {
-    localStorage.setItem(
-      REGISTERED_PATIENTS_KEY,
-      JSON.stringify([...registeredPatients, record.patientCpf]),
-    );
-  }
-
-  return record;
+export function removeBookletRecord(patientCpf: string, recordId: string): void {
+  writeBooklet(
+    patientCpf,
+    readBooklet(patientCpf).filter((record) => record.id !== recordId),
+  );
 }
 
 export function hasRegisteredBooklet(patientCpf: string): boolean {
-  return readRegisteredPatients().includes(patientCpf);
+  return patientCpf in readAll();
 }
 
-function readRegisteredPatients(): string[] {
-  const saved = localStorage.getItem(REGISTERED_PATIENTS_KEY);
-  if (!saved) return [];
-
+function readAll(): StoredBooklets {
   try {
-    return JSON.parse(saved) as string[];
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as StoredBooklets;
   } catch {
-    return [];
+    return {};
   }
 }
 
-function readSavedRecords(): VaccinationRecord[] {
-  const saved = localStorage.getItem(STORAGE_KEY);
+function readBooklet(patientCpf: string): VaccinationRecord[] {
+  return readAll()[patientCpf] ?? getMockCadernetaRecords(patientCpf);
+}
 
-  if (!saved) return [];
-
-  try {
-    return JSON.parse(saved) as VaccinationRecord[];
-  } catch {
-    return [];
-  }
+function writeBooklet(patientCpf: string, records: VaccinationRecord[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...readAll(), [patientCpf]: records }));
 }

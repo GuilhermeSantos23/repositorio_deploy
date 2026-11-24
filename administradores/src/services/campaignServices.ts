@@ -39,6 +39,8 @@ export function createCampaign(data: CampaignFormData): Promise<Campaign> {
     description: data.description,
     publishedAt: data.publishedAt,
     endDate: data.endDate,
+    disease: data.disease,
+    targetAudience: data.targetAudience,
   };
 
   campaignRecords = [novaCampanha, ...campaignRecords];
@@ -61,6 +63,8 @@ export function updateCampaign(id: number, data: CampaignFormData): Promise<Camp
       description: data.description,
       publishedAt: data.publishedAt,
       endDate: data.endDate,
+      disease: data.disease,
+      targetAudience: data.targetAudience,
     };
     return atualizada;
   });

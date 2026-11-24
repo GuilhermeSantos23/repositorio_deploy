@@ -3,10 +3,7 @@ import { Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { formatDateBR } from '../../../utils/date';
 import { isExpired, isNearExpiration } from '../../../utils/stockRules';
-import {
-  TIPO_MOVIMENTACAO_LABELS,
-  TIPO_MOVIMENTACAO_TEXT_CLASSES,
-} from '../../../utils/movimentacaoOptions';
+import { TIPO_MOVIMENTACAO_LABELS } from '../../../utils/movimentacaoOptions';
 import type { MovimentacaoDetalhada } from '../../../types/movimentacao';
 
 const PAGE_SIZE = 8;
@@ -32,9 +29,7 @@ function MovimentacaoTable({ movimentacoes, loading }: MovimentacaoTableProps) {
       title: 'Tipo',
       key: 'tipo',
       render: (_, mov) => (
-        <span className={`text-sm font-medium whitespace-nowrap ${TIPO_MOVIMENTACAO_TEXT_CLASSES[mov.tipo]}`}>
-          {TIPO_MOVIMENTACAO_LABELS[mov.tipo]}
-        </span>
+        <span className="whitespace-nowrap">{TIPO_MOVIMENTACAO_LABELS[mov.tipo]}</span>
       ),
     },
     {

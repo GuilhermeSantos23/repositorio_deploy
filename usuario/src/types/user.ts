@@ -24,9 +24,17 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   cpf: string;
+  // Data de nascimento no formato AAAA-MM-DD.
+  birthDate: string;
+  motherName: string;
+  fatherName: string;
+  cep: string;
+  email: string;
   password: string;
   acceptedTerms: boolean;
-  email?: string;
+  // Ciência da Política de Privacidade (ver tela de Cadastro).
+  acknowledgedPrivacyPolicy: boolean;
+  // Opcionais.
   phone?: string;
   susCard?: string;
 }
@@ -36,4 +44,7 @@ export interface RegisterData {
 export interface AuthResult {
   success: boolean;
   message: string;
+  // Motivo da falha, quando a tela precisa reagir a ele (ex: mostrar o
+  // erro junto ao campo CPF).
+  code?: 'cpf_duplicado' | 'erro_conexao';
 }
