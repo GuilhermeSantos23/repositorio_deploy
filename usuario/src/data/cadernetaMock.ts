@@ -13,7 +13,7 @@ export interface CitizenProfile extends CadernetaCitizen {
 }
 
 export const CITIZEN: CitizenProfile = {
-  name: 'Carla Ribeiro',
+  name: 'João da Silva Santos',
   cpf: '123.456.789-00',
   susCard: '700 9674 9916 0003',
   birthDate: '14/04/1992',
