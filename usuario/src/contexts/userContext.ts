@@ -18,9 +18,11 @@ export interface UserContextValue {
     cpf: string,
     senha: string,
   ) => Promise<{ success: boolean; message: string }>;
-  register: (
-    dados: RegisterData,
-  ) => Promise<{ success: boolean; message: string }>;
+  register: (dados: RegisterData,) => Promise<{
+  success: boolean;
+  message: string;
+  code?: string;
+  }>;
   logout: () => void;
 
   // Dados do usuário logado.

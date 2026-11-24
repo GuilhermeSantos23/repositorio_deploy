@@ -83,7 +83,7 @@ function IdentificacaoContent() {
         <div className="grid w-full grid-cols-1 gap-x-12 gap-y-5 sm:grid-cols-2">
           <Field label="Nome completo" value={citizen.name} />
           <Field label="CPF" value={citizen.cpf} />
-          <Field label="Cartão do SUS" value={citizen.susCard} />
+          <Field label="Cartão do SUS"value={citizen.susCard ?? 'Não informado'}/>
           <Field label="Data de Nascimento" value={citizen.birthDate} />
           <Field label="Idade" value={citizen.age} />
           <Field label="Grupo prioritário" value={citizen.priorityGroup} />

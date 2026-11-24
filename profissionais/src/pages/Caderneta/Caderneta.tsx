@@ -9,7 +9,6 @@ import { registerCadernetaRegistration } from '../../services/dashboardService';
 import { calculateAge, getRecorteByAge, isRecorteAvailableForAge } from '../../utils/ageRules';
 import { getTodayDateString } from '../../utils/dateRules';
 import { brazilianDateToIso, formatAnyDate } from '../../utils/formatDate';
-import { RECORTES } from '../../data/vaccinesData';
 import {
   hasErrors,
   validateCitizenSearch,
