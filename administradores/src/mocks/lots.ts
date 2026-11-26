@@ -1,21 +1,19 @@
 import type { VaccineLot } from '../types/lot';
 import { CURRENT_UNIT_ADMIN } from './session';
 
-// Os 10 lotes abaixo são os MESMOS registros de
-// `profissionais/src/data/mockLots.ts` (mesmos id, code, vaccineId,
-// vaccineName, manufacturer e quantity — nada disso foi alterado). Os
-// campos novos (receivedAt, expiresAt, receivedBy, attachmentName) foram
-// adicionados só para a tela de Estoque do Administrador poder exibir e
-// testar recebimento, validade e o receptor automático.
+// Os 10 lotes abaixo preservam os mesmos id, code, vaccineId,
+// vaccineName, manufacturer e quantity do mock original.
 //
-// Datas escolhidas para cobrir os cenários pedidos no escopo:
-// - receivedAt sempre <= hoje (15/09/2026), com variedade de datas;
-// - INF-26A41, HPV-9921 e PEN-26038 vencem nos próximos ~30 dias
-//   ("perto do vencimento");
-// - FA-26031 já está com a validade vencida, para testar a lógica futura
-//   de lote vencido (ver item 21 do escopo);
-// - quantidades preservadas como já estavam, o que já cobre os 3 níveis de
-//   estoque (crítico < 50, atenção 50–64, OK >= 65).
+// Referência temporal alinhada ao Dashboard: 25/11/2026.
+// Datas de validade ajustadas para que os cenários de alerta sejam
+// coerentes com essa referência:
+// - FA-26031: vencido;
+// - INF-26A41, HPV-9921 e PEN-26038: validade dentro dos próximos 15 dias;
+// - os demais: validade posterior ao período de atenção.
+//
+// As quantidades originais foram preservadas. Com o limite atual do
+// Dashboard (75 doses), todos os registros com quantidade <= 75 entram
+// em atenção por estoque. Os vencidos permanecem como prioridade de grau 1.
 export const MOCK_LOTS: VaccineLot[] = [
   {
     id: 'lot-influenza-01',
@@ -25,7 +23,7 @@ export const MOCK_LOTS: VaccineLot[] = [
     manufacturer: 'Instituto Butantan',
     quantity: 20,
     receivedAt: '2026-03-10',
-    expiresAt: '2026-10-05',
+    expiresAt: '2026-12-05',
     receivedBy: CURRENT_UNIT_ADMIN.name,
     attachmentName: 'romaneio-inf-26a41.pdf',
   },
@@ -48,7 +46,7 @@ export const MOCK_LOTS: VaccineLot[] = [
     manufacturer: 'Fundação Oswaldo Cruz',
     quantity: 24,
     receivedAt: '2026-01-15',
-    expiresAt: '2026-09-29',
+    expiresAt: '2026-12-10',
     receivedBy: CURRENT_UNIT_ADMIN.name,
   },
   {
@@ -126,7 +124,7 @@ export const MOCK_LOTS: VaccineLot[] = [
     manufacturer: 'Instituto Butantan',
     quantity: 45,
     receivedAt: '2026-08-25',
-    expiresAt: '2026-10-10',
+    expiresAt: '2026-12-08',
     receivedBy: CURRENT_UNIT_ADMIN.name,
   },
 ];

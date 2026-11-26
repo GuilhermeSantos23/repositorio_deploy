@@ -1,12 +1,28 @@
+import { Avatar } from 'antd';
 import { BellOutlined, MenuOutlined } from '@ant-design/icons';
 import { formatFullDate } from '../../../utils/formatDate';
-import UserAvatar from '../../common/UserAvatar/UserAvatar';
 
 interface HeaderProps {
   onMenuClick: () => void;
   adminName?: string;
   adminRole?: string;
   unitLabel?: string;
+}
+
+// "Ass." e títulos parecidos não entram nas iniciais — o avatar mostra as
+// duas letras do nome (ex.: Ass. Carla Ribeiro → CR).
+const HONORIFICS = new Set(['ass', 'dra', 'dr', 'enf', 'enfa']);
+
+function initialsFromName(name: string): string {
+  const parts = name
+    .split(/\s+/)
+    .map((word) => word.replace(/\./g, ''))
+    .filter((word) => word.length > 0 && !HONORIFICS.has(word.toLowerCase()));
+
+  if (parts.length === 0) return '?';
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return `${first}${last}`.toUpperCase();
 }
 
 function Header({
@@ -16,6 +32,7 @@ function Header({
   unitLabel = 'Unidade 77',
 }: HeaderProps) {
   const today = formatFullDate(new Date());
+  const initials = initialsFromName(adminName);
 
   return (
     <header className="flex items-center justify-end gap-4 border-b border-gray-200 bg-white px-4 py-3 lg:gap-5 lg:px-8">
@@ -33,7 +50,9 @@ function Header({
       </button>
 
       <div className="hidden items-center gap-2 sm:flex">
-        <UserAvatar size={36} />
+        <Avatar size={36} style={{ backgroundColor: '#a7f3d0', color: '#022c22' }}>
+          {initials || '?'}
+        </Avatar>
         <div className="text-left text-sm">
           <p className="font-semibold text-gray-900">{adminName}</p>
           <p className="text-gray-500">{adminRole}</p>

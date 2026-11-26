@@ -2,8 +2,9 @@
  * Serviço de recuperação de senha.
  *
  * MOCK — ainda não existe backend para recuperação de senha. Este
- * serviço simula as três etapas do fluxo (CPF -> código -> nova
- * senha), sem enviar e-mail real e sem validar um código de verdade.
+ * serviço simula as duas etapas do fluxo (CPF -> código), sem enviar
+ * e-mail real e sem validar um código de verdade. Depois que o código
+ * é aceito, o usuário entra no sistema — não há redefinição de senha.
  *
  * Fluxo futuro esperado, quando o backend existir:
  *
@@ -14,11 +15,7 @@
  *
  *   Código
  *    -> POST /verify-code
- *    -> backend valida o código enviado por e-mail
- *
- *   Nova senha
- *    -> POST /reset-password
- *    -> backend efetiva a nova senha do administrador
+ *    -> backend valida o código enviado por e-mail e libera o acesso
  *
  * Os endpoints acima são apenas uma representação arquitetural do
  * fluxo — o contrato real será definido quando o backend existir. A
@@ -46,10 +43,6 @@ export interface PasswordRecoveryResult {
 }
 
 export interface VerifyRecoveryCodeResult {
-  success: boolean;
-}
-
-export interface ResetPasswordResult {
   success: boolean;
 }
 
@@ -85,22 +78,5 @@ export function verifyRecoveryCode(
     success:
       cpf.replace(/\D/g, '').length === 11 &&
       digits.length === MOCK_ACCEPTED_CODE_LENGTH,
-  });
-}
-
-/**
- * Define a nova senha do administrador após o código validado.
- * TODO(backend): substituir por uma chamada real (ex.: POST /reset-password).
- */
-export function resetPassword(
-  cpf: string,
-  code: string,
-  newPassword: string,
-): Promise<ResetPasswordResult> {
-  return delay({
-    success:
-      cpf.replace(/\D/g, '').length === 11 &&
-      code.replace(/\D/g, '').length === MOCK_ACCEPTED_CODE_LENGTH &&
-      newPassword.trim().length > 0,
   });
 }

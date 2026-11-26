@@ -23,7 +23,7 @@ interface Stats {
 }
 
 function UBSs() {
-  const region = CURRENT_REGIONAL_ADMIN.region;
+  const regional = CURRENT_REGIONAL_ADMIN.regional;
 
   const [ubsList, setUBSList] = useState<UBS[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -102,7 +102,7 @@ function UBSs() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Gerenciamento de UBSs</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de UBSs</h1>
           <p className="mt-1 text-sm text-gray-500">
             Cadastre, edite e supervisione as unidades públicas da sua região.
           </p>
@@ -200,14 +200,14 @@ function UBSs() {
 
       <RegisterUBSFlow
         open={isRegisterOpen}
-        region={region}
+        region={regional}
         onClose={() => setIsRegisterOpen(false)}
         onRegistered={handleRegistered}
       />
 
       <EditUBSFlow
         ubs={ubsBeingEdited}
-        region={region}
+        region={regional}
         onClose={() => setUBSBeingEdited(null)}
         onUpdated={handleUpdated}
       />

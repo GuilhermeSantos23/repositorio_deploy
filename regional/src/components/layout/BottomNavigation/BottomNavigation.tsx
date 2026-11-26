@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import { mainNavItems } from '../navItems';
-
+/* Classe para os itens da navegação principal */
 const itemClassName =
   'flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] text-gray-500 hover:text-emerald-700';
 const activeItemClassName = 'text-emerald-700';
-
+/* Classe para o item ATIVO da navegação principal */
 function BottomNavigation() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white lg:hidden">

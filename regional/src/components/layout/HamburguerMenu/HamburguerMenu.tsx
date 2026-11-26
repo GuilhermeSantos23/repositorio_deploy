@@ -2,9 +2,9 @@ import { Drawer } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { NavLink } from 'react-router-dom';
 import { bottomNavItems } from '../navItems';
-
+/*Props do hamburguer menu quando a tela diminui*/
 interface HamburguerMenuProps {
-  open: boolean;
+  open: boolean; /* Conteudo ministrado nas aulas da apost. Indica um status verdadeiro ou falso/Ativo/inativo*/
   onClose: () => void;
 }
 
@@ -13,7 +13,7 @@ const DARK_GREEN = '#022c22';
 const itemClassName =
   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm !text-emerald-100 hover:bg-emerald-900 hover:!text-white';
 
-function HamburguerMenu({ open, onClose }: HamburguerMenuProps) {
+function HamburguerMenu({ open, onClose }: HamburguerMenuProps) { /* quando ativo o HM, o drawer ativa - é um menu lateral que suge rolando*/
   return (
     <Drawer
       placement="right"

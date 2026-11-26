@@ -16,19 +16,29 @@ interface RegisterUBSFlowProps {
   onRegistered: (ubs: UBS) => void;
 }
 
-function RegisterUBSFlow({ open, region, onClose, onRegistered }: RegisterUBSFlowProps) {
+function RegisterUBSFlow({
+  open,
+  region,
+  onClose,
+  onRegistered,
+}: RegisterUBSFlowProps) {
   const [step, setStep] = useState<Step>('form');
-  const [formData, setFormData] = useState<UBSFormData>(() => buildEmptyFormData(region));
+
+  const [formData, setFormData] = useState<UBSFormData>(() =>
+    buildEmptyFormData(region),
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdUBS, setCreatedUBS] = useState<UBS | null>(null);
 
   function handleClose() {
     onClose();
-    // Reseta o fluxo após a animação de fechamento do modal.
+
     setTimeout(() => {
       setStep('form');
       setFormData(buildEmptyFormData(region));
       setCreatedUBS(null);
+      setIsSubmitting(false);
     }, 250);
   }
 
@@ -38,17 +48,25 @@ function RegisterUBSFlow({ open, region, onClose, onRegistered }: RegisterUBSFlo
   }
 
   async function handleConfirmRegister() {
-    setIsSubmitting(true);
-    const ubs = await createUBS(formData);
-    setIsSubmitting(false);
-    setCreatedUBS(ubs);
-    setStep('success');
+    try {
+      setIsSubmitting(true);
+
+      const ubs = await createUBS(formData);
+
+      setCreatedUBS(ubs);
+      setStep('success');
+    } catch (error) {
+      console.error('Erro ao cadastrar UBS:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleFinish() {
     if (createdUBS) {
       onRegistered(createdUBS);
     }
+
     handleClose();
   }
 

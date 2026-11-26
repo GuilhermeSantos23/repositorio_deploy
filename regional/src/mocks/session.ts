@@ -11,5 +11,5 @@
 export const CURRENT_REGIONAL_ADMIN = {
   name: 'Carla Ribeiro',
   role: 'Admin. Regional',
-  region: 'Centro-Sul/SP',
+  regional: 'Centro',
 };

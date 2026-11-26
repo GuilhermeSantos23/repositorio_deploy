@@ -1,9 +1,11 @@
+/* Aqui é onde foi criado o status de confirmação ao logar*/
+
 interface ValidationOverlayProps {
-  status: 'validating' | 'success';
+  status: 'validating' | 'success'; /* Status da overlay de validação */
   validatingText: string;
   successText: string;
 }
-
+/* Props para o componente de overlay de validação */
 function ValidationOverlay({
   status,
   validatingText,

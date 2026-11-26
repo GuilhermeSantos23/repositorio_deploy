@@ -25,6 +25,9 @@ function EsqueciSenha() {
   const [codigo, setCodigo] = useState('');
   const [codigoErro, setCodigoErro] = useState('');
 
+  const [codigoUnidade, setCodigoUnidade] = useState('');
+  const [unidadeError] = useState('');
+
   const navigate = useNavigate();
 
   function avancarComValidacao(proximaEtapa: Etapa) {
@@ -107,6 +110,15 @@ function EsqueciSenha() {
                 onChange={(event) => setCpf(maskCPF(event.target.value))}
                 error={cpfErro}
               />
+               <FormField
+              label="Código da unidade"
+              type="text"
+              inputMode="numeric"
+              maxLength={8}
+              value={codigoUnidade}
+              onChange={(event) => setCodigoUnidade(maskNumeric(event.target.value, 8))}
+              error={unidadeError}
+            />
 
               <button
                 type="submit"

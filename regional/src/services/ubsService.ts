@@ -1,6 +1,8 @@
 import type { UBS, UBSFormData, UBSSearchCriterion, UBSStatus } from '../types/ubs';
 import { CURRENT_REGIONAL_ADMIN } from '../mocks/session';
 import { onlyDigits } from '../utils/masks';
+import { joinPersonName } from '../utils/personName';
+import { generateUniqueUnitCode } from '../utils/unitCode';
 
 /**
  * Serviço de UBSs (Unidades Básicas de Saúde).
@@ -28,7 +30,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Jardim Paulista',
     address: 'Rua Haddock Lobo, 595, Jardim Paulista',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 3062-1145',
     email: 'ubs.jardimpaulista@saude.prefsp.gov.br',
     status: 'operando',
@@ -53,7 +55,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Vila Mariana',
     address: 'Rua Domingos de Morais, 2200, Vila Mariana',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 5573-2288',
     email: 'ubs.vilamariana@saude.prefsp.gov.br',
     status: 'interditada',
@@ -79,7 +81,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Itaim Bibi',
     address: 'Rua Joaquim Floriano, 100, Itaim Bibi',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 3168-4477',
     email: 'ubs.itaimbibi@saude.prefsp.gov.br',
     status: 'operando',
@@ -104,7 +106,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Pinheiros',
     address: 'Rua Teodoro Sampaio, 1500, Pinheiros',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 3819-2233',
     email: 'ubs.pinheiros@saude.prefsp.gov.br',
     status: 'operando',
@@ -138,7 +140,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Santana',
     address: 'Avenida Cruzeiro do Sul, 1200, Santana',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 2950-1122',
     email: 'ubs.santana@saude.prefsp.gov.br',
     status: 'operacoes_encerradas',
@@ -164,7 +166,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Tatuapé',
     address: 'Rua Antônio Bicudo, 340, Tatuapé',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 2098-3344',
     email: 'ubs.tatuape@saude.prefsp.gov.br',
     status: 'operando',
@@ -189,7 +191,7 @@ let mockUBSs: UBS[] = [
     name: 'UBS Campo Belo',
     address: 'Avenida Santo Amaro, 3200, Campo Belo',
     city: 'São Paulo',
-    region: CURRENT_REGIONAL_ADMIN.region,
+    region: CURRENT_REGIONAL_ADMIN.regional,
     phone: '(11) 5044-7788',
     email: 'ubs.campobelo@saude.prefsp.gov.br',
     status: 'fechada',
@@ -269,15 +271,15 @@ export function getUBSStats(): Promise<{
 }
 
 /**
- * Cadastra uma nova UBS.
- * TODO(backend): substituir corpo por POST /ubs.
+ * Cadastra uma nova UBS com código único gerado automaticamente.
+ * TODO(backend): substituir corpo por POST /ubs (o backend passa a gerar o código).
  */
 export function createUBS(data: UBSFormData): Promise<UBS> {
   const id = `ubs-${Date.now()}`;
 
   const newUBS: UBS = {
     id,
-    code: data.code,
+    code: generateUniqueUnitCode(),
     name: data.name,
     address: data.address,
     city: data.city,
@@ -287,7 +289,14 @@ export function createUBS(data: UBSFormData): Promise<UBS> {
     status: data.status,
     administrators: data.administrators.map((admin, index) => ({
       id: `${id}-admin-${index + 1}`,
-      ...admin,
+      firstName: admin.firstName.trim(),
+      lastName: admin.lastName.trim(),
+      name: joinPersonName(admin.firstName, admin.lastName),
+      cpf: admin.cpf,
+      email: admin.email,
+      phone: admin.phone,
+      temporaryPassword: admin.temporaryPassword,
+      login: admin.login,
     })),
     history: [
       {
@@ -304,7 +313,7 @@ export function createUBS(data: UBSFormData): Promise<UBS> {
 }
 
 /**
- * Altera uma UBS existente.
+ * Altera uma UBS existente sem modificar seu código.
  * TODO(backend): substituir corpo por PUT /ubs/{id}.
  */
 export function updateUBS(id: string, data: UBSFormData): Promise<UBS | null> {
@@ -318,7 +327,7 @@ export function updateUBS(id: string, data: UBSFormData): Promise<UBS | null> {
 
   const updated: UBS = {
     ...existing,
-    code: data.code,
+    code: existing.code,
     name: data.name,
     address: data.address,
     city: data.city,
@@ -328,7 +337,14 @@ export function updateUBS(id: string, data: UBSFormData): Promise<UBS | null> {
     status: data.status,
     administrators: data.administrators.map((admin, i) => ({
       id: existing.administrators[i]?.id ?? `${id}-admin-${i + 1}`,
-      ...admin,
+      firstName: admin.firstName.trim(),
+      lastName: admin.lastName.trim(),
+      name: joinPersonName(admin.firstName, admin.lastName),
+      cpf: admin.cpf,
+      email: admin.email,
+      phone: admin.phone,
+      temporaryPassword: admin.temporaryPassword,
+      login: admin.login,
     })),
     history: [
       ...existing.history,

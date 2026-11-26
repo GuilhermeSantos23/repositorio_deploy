@@ -1,11 +1,11 @@
 export const CURRENT_UNIT_ADMIN = {
   id: 'adm-1',
-  name: 'Ass. Carla Ribeiro',
+  name: 'Carla Ribeiro',
   firstName: 'Carla',
   lastName: 'Ribeiro',
   cpf: '',
   email: '',
   phone: '',
   role: 'Admin. Unidade',
-  unit: 'Unidade 77',
+  unit: 'UBS Pimentas',
 };

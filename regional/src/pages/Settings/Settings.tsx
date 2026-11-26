@@ -1,12 +1,10 @@
 import { Tabs } from 'antd';
 import ProfileTab from './tabs/ProfileTab';
-import SecurityTab from './tabs/SecurityTab';
 import DeviceTab from './tabs/DeviceTab';
 import PreferencesTab from './tabs/PreferencesTab';
 
 const tabItems = [
   { key: 'profile', label: 'Perfil', children: <ProfileTab /> },
-  { key: 'security', label: 'Segurança', children: <SecurityTab /> },
   { key: 'devices', label: 'Dispositivos', children: <DeviceTab /> },
   { key: 'preferences', label: 'Preferências', children: <PreferencesTab /> },
 ];
